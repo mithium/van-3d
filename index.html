@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v20 · 3D walk-through</title>
+<title>Martin's van v21 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,12 +28,12 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v20 · 3D</span>
+    <span id="title">Van v21 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
   <div class="row extra">
-    <button data-preset="door">From the sliding door</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Galley + shelves</button><button data-preset="chair">Gaming chair</button>
+    <button data-preset="door">From the sliding door</button><button data-preset="front">Aisle → front</button><button data-preset="couch">Couch + sink window</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Galley + shelves</button><button data-preset="chair">Gaming chair</button>
     <button data-preset="bed">Lying in bed → monitor</button><button data-preset="dollhouse">Dollhouse</button>
   </div>
   <div class="row extra">
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v20 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v21 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -417,10 +417,12 @@ const CABWIN = [[-56, 102], [-12, 102], [-12, 150], [-44, 150]];
 const passOutline = [[-100, 0], [SD1, 0], [SD1, DOORH], [SD2, DOORH], [SD2, 0], [L, 0], [L, WALLTOP], [-62, WALLTOP], [-100, 100]];
 const drvOutline = [[-100, 0], [L, 0], [L, WALLTOP], [-62, WALLTOP], [-100, 100]];
 const winHole = rectPts(WX1, WY1, WX2, WY2);
-sideShape(passOutline, 0, mat.felt, [winHole, CABWIN]);
-sideShape(drvOutline, W, mat.felt, [CABWIN]);
-sideShape(passOutline.map(p => p[1] === 0 && (p[0] === -100 || p[0] === L) ? [p[0] + (p[0] === L ? 3 : 0), -38] : p), -3, mat.paint, [winHole, CABWIN]);
-sideShape(drvOutline.map(p => p[1] === 0 ? [p[0] + (p[0] === L ? 3 : 0), -38] : p), W + 3, mat.paint, [CABWIN]);
+// v21: NEW tinted windows: over the sink (driver wall, Arctic Tern 300x500) + beside the bed (passenger rear quarter, AT 300x500)
+const sinkWin = rectPts(121, 120, 171, 150), bedWin = rectPts(365, 120, 415, 150);
+sideShape(passOutline, 0, mat.felt, [winHole, CABWIN, bedWin]);
+sideShape(drvOutline, W, mat.felt, [CABWIN, sinkWin]);
+sideShape(passOutline.map(p => p[1] === 0 && (p[0] === -100 || p[0] === L) ? [p[0] + (p[0] === L ? 3 : 0), -38] : p), -3, mat.paint, [winHole, CABWIN, bedWin]);
+sideShape(drvOutline.map(p => p[1] === 0 ? [p[0] + (p[0] === L ? 3 : 0), -38] : p), W + 3, mat.paint, [CABWIN, sinkWin]);
 // door jambs + window frame + glass
 box(SD1 - 2, SD1, 0, DOORH, -3, 0, mat.paint); box(SD2, SD2 + 2, 0, DOORH, -3, 0, mat.paint);
 box(SD1 - 2, SD2 + 2, DOORH, DOORH + 2, -3, 0, mat.paint);
@@ -428,9 +430,19 @@ clipMats.push(mat.rubber);
 box(WX1 - 2, WX2 + 2, WY1 - 2, WY1, -3, 0.6, mat.rubber); box(WX1 - 2, WX2 + 2, WY2, WY2 + 2, -3, 0.6, mat.rubber);
 box(WX1 - 2, WX1, WY1, WY2, -3, 0.6, mat.rubber); box(WX2, WX2 + 2, WY1, WY2, -3, 0.6, mat.rubber);
 sideShape(winHole, -1.5, mat.tint);
+function winFrame(x1, x2, y1, y2, za, zb) {
+  box(x1 - 2, x2 + 2, y1 - 2, y1, za, zb, mat.rubber); box(x1 - 2, x2 + 2, y2, y2 + 2, za, zb, mat.rubber);
+  box(x1 - 2, x1, y1, y2, za, zb, mat.rubber); box(x2, x2 + 2, y1, y2, za, zb, mat.rubber);
+}
+winFrame(365, 415, 120, 150, -3, 0.6); sideShape(bedWin, -1.5, mat.tint);
+winFrame(121, 171, 120, 150, W - 0.6, W + 3); sideShape(sinkWin, W + 1.5, mat.tint);
 sideShape(CABWIN, -1.5, mat.glass); sideShape(CABWIN, W + 1.5, mat.glass);
 // sliding door, slid open toward the rear (outside the body)
-box(SD2 + 2, SD2 + 134, 1, DOORH + 1, -10, -6, mat.paint);
+const sdOut = rectPts(SD2 + 2, 1, SD2 + 134, DOORH + 1), sdWin = rectPts(66 + 132, 100, 136 + 132, 155);
+sideShape(sdOut, -6, mat.paint, [sdWin]); sideShape(sdOut, -10, mat.paint, [sdWin]);
+box(SD2 + 2, SD2 + 134, 1, 2, -10, -6, mat.paint); box(SD2 + 2, SD2 + 134, DOORH, DOORH + 1, -10, -6, mat.paint);
+box(SD2 + 2, SD2 + 3, 1, DOORH + 1, -10, -6, mat.paint); box(SD2 + 133, SD2 + 134, 1, DOORH + 1, -10, -6, mat.paint);
+winFrame(198, 268, 100, 155, -10.6, -5.4); sideShape(sdWin, -8, mat.tint);
 box(SD2 + 6, SD2 + 18, 90, 94, -11.5, -10, mat.dark);
 // upper curved walls + ceiling (interior) and roof skin (exterior)
 const inProf = roofProfile(0, W, WALLTOP, CEIL, 12);
@@ -539,11 +551,12 @@ const doorA = new T.Group(); doorA.position.set(DD2[0], 0, DD2[1]); root.add(doo
 const DOOR_A0 = Math.atan2(-(DD1[1] - DD2[1]), DD1[0] - DD2[0]);       // closed: leaf points from the hinge toward DD1
 box(0, DLEN, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
 box(DLEN - 8, DLEN - 4, 92, 95, -3.5, 3.5, mat.steel, doorA);
-// sliding cab door (rides in a track just inside the front wall)
+// v21: sliding cab door rides on the CAB side of the front wall and parks behind the driver seat back (not inside the bath)
 const doorF = new T.Group(); root.add(doorF);
-box(BX1, BX1 + 2.4, 1, DH - 1, FD1, FD2, mat.bathDoor, doorF);
-box(BX1 + 2.4, BX1 + 4.5, 92, 106, FD1 + 4, FD1 + 6, mat.steel, doorF);
-box(BX1 - 1.5, BX1 + 4, DH, DH + 2, FD1, W - 3, mat.steelClip);           // track
+box(BX1 - 4.6, BX1 - 2.2, 1, DH - 1, FD1, FD2, mat.bathDoor, doorF);
+box(BX1 - 6.4, BX1 - 4.6, 92, 106, FD1 + 4, FD1 + 6, mat.steel, doorF);
+box(BX1 - 1.6, BX1 + 0.6, 92, 106, FD1 + 2, FD1 + 3, mat.steel);          // recessed pull on the bath side of the jamb
+box(BX1 - 6, BX1 - 2, DH, DH + 2, FD1, W - 3, mat.steelClip);             // track
 let bathOpen = true;
 function setBathDoors(open) {
   bathOpen = open;
@@ -561,7 +574,7 @@ rbox(TXC - 17.5, TXC + 17.5, 40, 52, 161, 174, 3, mat.shower);
 rod([84, 188, W - 1], [84, 188, 166], 1, mat.steelClip);
 cyl(84, 186, 189, 164, 6, mat.steelClip);
 box(78, 90, 110, 124, W - 2, W - 0.5, mat.steelClip);
-rod([BX1 + 2, 186, 125], [98, 186, 125], 0.8, mat.steelClip);           // curtain rail (keeps the path drier)
+// v21: no shower curtain / rail: the whole enclosed bath is the wet zone
 const bl = new T.Mesh(new T.CylinderGeometry(4, 4, 0.6, 16), mat.led); bl.position.set(30, BTOP - 0.4, 150); groups.upper.add(bl);
 // bath ceiling panel (angled outline) with the v20 MaxxAir opening (x 41..81, z 95..135)
 const FX1 = 41, FX2 = 81, FZ1 = 95, FZ2 = 135;
@@ -594,7 +607,7 @@ cyl(172, 92, 108, 163, 6, M({ color: 0x2e5a4f }));                      // kettl
 
 // ------------------------------------------------------------------ v18 TALL FRIDGE UNIT  x 5..60, z 4..66, floor to ~ceiling
 // Dometic NRX 80C (47.5 W x 53.7 D x 62.5 H cm, 75 L, 12/24 V) at ~85..148 cm, door toward the entry
-box(5, 60, 0, 192, 4, 66, mat.birchClip);
+box(5, 60, 0, CEIL, 4, BZ1 - 2, mat.birchClip);                            // v21: floor -> ceiling, flush to the bath wall
 box(60, 60.6, 85, 147.5, 5, 52.5, mat.fridge);                          // fridge door (dark silver)
 box(60.6, 62, 88, 145, 8, 10, mat.steel);                               // full-height handle
 box(60, 60.4, 80, 84, 5, 52.5, mat.dark);                               // vent / trim
@@ -607,10 +620,12 @@ box(60.9, 61.1, 155, 175, 9, 37, M({ color: 0x15181b }));               // door 
 box(60.9, 61.2, 155, 175, 39, 48, mat.charcoal);                         // control panel
 for (let k = 0; k < 4; k++) box(61.1, 61.3, 158 + k * 4, 160 + k * 4, 41, 46, mat.ledRGB);
 box(61.2, 62.4, 162, 168, 37.5, 38.5, mat.black);                        // door release
-box(60, 60.5, 179, 186, 6, 50, mat.dark);                                // vent grille above (no cupboard)
-for (let z = 8; z < 49; z += 3) box(60.5, 60.7, 180, 185, z, z + 1.2, mat.grey);
-box(60, 60.5, 2, 190, 53.6, 54.4, mat.dark);                              // pull-out pantry seam (kept)
-box(60.5, 61.8, 110, 130, 58.5, 60.5, mat.black);
+box(60, 60.5, 178.5, 182, 6, 53, mat.dark);                              // vent strip over the microwave
+for (let z = 8; z < 51; z += 3) box(60.5, 60.7, 179, 181.5, z, z + 1.2, mat.grey);
+box(60, 60.5, 182.5, 182.9, 5, 67, mat.dark);                            // v21: cupboard door seam, cupboard 182 -> ceiling
+box(60.5, 61.8, 185, 189, 26, 32, mat.black);
+box(60, 60.5, 2, 182, 53.6, 54.4, mat.dark);                              // pull-out pantry seam (16 cm pantry)
+box(60.5, 61.8, 110, 130, 60.5, 62.5, mat.black);
 
 // ------------------------------------------------------------------ v19 SLIM OVERHEAD SHELF (1 level, 16 deep, board 178.2..180, 4 cm lip), full length
 const SHD = 16, SHY = 178.2;
@@ -700,14 +715,18 @@ const cb = rbox(-25, 25, 54, 128, 20, 31, 5, mat.chairRed, chair); cb.rotation.x
 rbox(-12, 12, 108, 122, 30, 36, 4, mat.chairBlack, chair).position.z += 6;
 for (const sx of [-28, 28]) { rod([sx, 54, 10], [sx, 66, 10], 1.6, mat.dark, chair); rbox(sx - 3.5, sx + 3.5, 66, 69, -12, 16, 1.4, mat.chairBlack, chair); }
 
-// ------------------------------------------------------------------ DIY 1-PERSON COUCH  x 248..310, z 120..175
-const CX1 = 248, CX2 = 310, CZ1 = 120, CZ2 = 175;
-box(CX1, CX2, 0, 38, CZ1, CZ2, mat.oak);
-rbox(CX1 + 8, CX2 - 8, 37, 50, CZ1 + 1, CZ2 - 9, 4, mat.fabricCouch);
+// ------------------------------------------------------------------ v21 LONG DIY COUCH  x 185..310 (galley end -> bed)
+// rear part x 248..310 is 55 deep (z 120..175); front part x 185..248 is 45 deep (z 130..175) so the gaming chair keeps room
+const CX1 = 185, CXS = 248, CX2 = 310, CZ1 = 120, CZ1F = 130, CZ2 = 175;
+box(CX1, CXS, 0, 38, CZ1F, CZ2, mat.oak); box(CXS, CX2, 0, 38, CZ1, CZ2, mat.oak);
+box(CXS - 0.3, CXS + 0.3, 2, 36, CZ1F - 0.4, CZ1F, mat.dark);
+for (const x of [216, 279]) box(x - 4, x + 4, 30, 32, CZ1 - 0.5 + (x < CXS ? 10 : 0), CZ1 + (x < CXS ? 10 : 0), mat.dark);   // lid pulls
+rbox(CX1 + 1, CXS - 0.5, 37, 50, CZ1F + 1, CZ2 - 9, 4, mat.fabricCouch);
+rbox(CXS + 0.5, CX2 - 8, 37, 50, CZ1 + 1, CZ2 - 9, 4, mat.fabricCouch);
 rbox(CX1 + 1, CX2 - 1, 38, 86, CZ2 - 11, CZ2, 5, mat.fabricCouchD);
-rbox(CX1, CX1 + 8, 30, 62, CZ1 + 0.5, CZ2, 3.5, mat.fabricCouchD);
 rbox(CX2 - 8, CX2, 30, 62, CZ1 + 0.5, CZ2, 3.5, mat.fabricCouchD);
 const tp = rbox(262, 290, 50, 74, CZ2 - 20, CZ2 - 10, 5, mat.pillow2); tp.rotation.x = -0.25;
+const tp2 = rbox(196, 222, 50, 72, CZ2 - 19, CZ2 - 10, 5, mat.throw); tp2.rotation.x = -0.25;
 
 // ------------------------------------------------------------------ BED  x 310..434, platform top 95
 const BEDX1 = 310, BEDX2 = 434, BEDY = 95;
@@ -770,16 +789,20 @@ for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 
 // ------------------------------------------------------------------ LABELS
 const labelDefs = [
   ['Angled walk-through bath · 2 doors', [45, 165, 110]],
-  ['Sliding door → cab (52 cm)', [6, 150, 96]],
+  ['Cab door 52 cm · slides behind the driver seat', [6, 150, 96]],
   ['Diagonal bath door 55 cm', [88, 150, 90]],
   ['Toilet behind the driver seat', [37, 70, 150]],
   ['Shower corner', [86, 120, 150]],
   ['Straight galley 73 cm · sink · storage', [148, 104, 140]],
+  ['Window over the sink 50×30', [146, 156, W - 2]],
+  ['Bed window 50×30', [390, 156, 2]],
+  ['Sliding-door window 70×55', [233, 160, -8], () => mode !== 'walk'],
   ['Slim shelf · 16 deep · 180 cm', [225, 192, 165]],
   ['Shelf over the sliding door', [100, 190, 10]],
   ['Slim shelf to the rear doors', [225, 192, 13], () => mode === 'walk'],
   ['Cab-over shelf 127×44', [-40, 190, 89]],
-  ['Microwave 0.7 cu ft (152–178 cm)', [62, 184, 28]],
+  ['Microwave 0.7 cu ft (152–178 cm)', [62, 172, 28]],
+  ['Fridge tower to the ceiling', [62, 193, 40]],
   ['Dometic NRX 80C fridge', [62, 120, 28]],
   ['Sliding door (130 × 160 cm)', [100, 140, 1]],
   ['Desk extension + drawers', [166, 92, 30]],
@@ -787,7 +810,7 @@ const labelDefs = [
   ['PC bay (mATX/ITX)', [298, 70, 45]],
   ['10" security tablet', [298, 101, 3], () => modeName !== 'dollhouse'],
   ['Gaming chair', [216, 138, 95]],
-  ['DIY 1-person couch', [279, 96, 150]],
+  ['Long DIY couch 125 cm · storage under', [250, 96, 152]],
   ['Bed 172×124 · front half lifts', [355, 126, 90]],
   ['Service bay: 24V battery, electrics, water heater, pump, fuel heater', [405, 48, 140], () => xray],
   ['Cat litter bay (sealed)', [333, 50, 83], () => xray],
@@ -899,6 +922,8 @@ function preset(name) {
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
   if (name === 'entry') { setBathDoors(true); walk.pos.set(132, 0, 4); walk.eye = walk.targetEye = 160; lookAtYP(132, 160, 4, 62, 118, 112); }
+  if (name === 'front') { setBathDoors(true); walk.pos.set(172, 0, 96); walk.eye = walk.targetEye = 162; lookAtYP(172, 162, 96, 30, 128, 70); }
+  if (name === 'couch') { setBathDoors(true); walk.pos.set(118, 0, 72); walk.eye = walk.targetEye = 165; lookAtYP(118, 165, 72, 240, 75, 172); }
   if (name === 'hall') { setBathDoors(true); walk.pos.set(215, 0, 140); walk.eye = walk.targetEye = 162; lookAtYP(215, 162, 140, 60, 135, 50); }
   if (name === 'bath') { setBathDoors(true); walk.pos.set(97, 0, 84); walk.eye = walk.targetEye = 165; lookAtYP(97, 165, 84, 0, 182, 110); }
 }
@@ -911,11 +936,11 @@ const obstacles = [
   [8, 10, FD2, 178], [8, 11, FD1 - 2, FD1], [8, DGA[0], BZ1 - 2, BZ1], [BX2, 114, DGB[1] - 1, 178],
   [TXC - 17.5, TXC + 17.5, 127, 178],
   [112, 186, 119, 178],                    // straight galley
-  [3, 62, 0, 67],                          // tall fridge unit
-  [140, 310, 0, 58], [248, 310, 120, 178], [310, 437, 0, 178],
+  [3, 62, 0, 70],                          // tall fridge tower (flush to the bath)
+  [140, 310, 0, 58], [248, 310, 120, 178], [185, 248, 130, 178], [310, 437, 0, 178],
   [-60, -8, 122, 172], [-60, -8, 6, 56], [-58, -18, 62, 116], [-110, -74, 0, 178],
 ];
-const doorObs = () => bathOpen ? [[DD2[0] - 2, DD2[0] + 2, DD2[1], DD2[1] + DLEN], [10, 13, FD2, 174]] : [[8, 12, FD1, FD2]];
+const doorObs = () => bathOpen ? [[DD2[0] - 2, DD2[0] + 2, DD2[1], DD2[1] + DLEN], [4, 8, FD2, 174]] : [[4, 8, FD1, FD2]];
 const segs = () => [[DGA, DD1], [DD2, DGB]].concat(bathOpen ? [] : [[DD1, DD2]]);
 function segDist(x, z, a, b) {
   const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
