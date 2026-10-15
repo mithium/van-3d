@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v23 · 3D walk-through</title>
+<title>Martin's van v24 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v23 · 3D</span>
+    <span id="title">Van v24 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v23 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v24 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -501,7 +501,11 @@ const arch = xc => { const o = []; for (let k = 0; k < 9; k++) { const a = xc - 
 //  P: desk = FW286R middle panel 97.2 x 72.2 (est. height).   (passenger bed window removed)
 //  D: Ford 'fixed glass opposite the slider' = FW293L size 138.7 x 73.8 (54-5/8 x 29-1/16") at x 4..143 -> lands mostly on the bath (blanked inside);
 //     bed porthole: small aftermarket ~30 x 20 cm (estimate) just above the mattress.
-const WIN = { P: [[WX1, WX2, WY1, WY2]], D: [[4.3, 143, 59, 132.8], [383, 413, 114, 134]] };
+// v24: the big driver glass (FW293L) is GONE. Driver MIDDLE panel = CRL FW286L (mirror of FW286R, 97.2 x ~72.2 est.) in the Ford
+//      middle stamping x 152..249.2 (can't slide forward: the C-pillar/stamping fixes it) -> over the rear 96 cm of the 138 cm counter.
+//      Glass runs y 59.5..131.7 outside; inside, the part below the counter top (92) is blanked by the cabinet back (black panel).
+const WIN = { P: [[WX1, WX2, WY1, WY2]], D: [[WX1, WX2, WY1, WY2], [383, 413, 114, 134]] };
+const WIN_IN = { P: WIN.P, D: [[WX1, WX2, 92, WY2], [383, 413, 114, 134]] };   // interior openings (driver middle clipped to the counter top)
 const SDG = [4.25, 141.75, 59, 132.3];   // slider glass (Ford fixed/vented slider glass = FW293R size 137.5 x 73.3) on the CLOSED door
 
 // ---- exterior skin
@@ -537,6 +541,10 @@ const sdOpen = new T.Group(), sdClosed = new T.Group(); root.add(sdOpen); root.a
   sweep(onSide(subProf(PROF_E, g[2], g[3]), -1, 5.5), g[0], g[1], mat.tint, sdOpen);
   sideBands(PROF_E, -1, SD1 - 4, SD2 + 4, 0, DOORH + 1, [SDG], mat.paint, sdClosed, 0.4);
   sweep(onSide(subProf(PROF_E, SDG[2], SDG[3]), -1, 0.2), SDG[0], SDG[1], mat.tint, sdClosed);
+  // v24 black insulated panel behind the slider glass where the fridge tower sits (x ~4..62), rides with the door
+  const blk = new T.MeshLambertMaterial({ color: 0x0a0a0a, side: T.DoubleSide });
+  sweep(onSide(subProf(PROF_E, g[2] - 1, g[3] + 1), -1, 4.2), g[0] - 0.5, 62 + off, blk, sdOpen);
+  sweep(onSide(subProf(PROF_E, SDG[2] - 1, SDG[3] + 1), -1, -1.4), SDG[0] - 0.5, 62, blk, sdClosed);
   box(SD2 - 6, SD2 + 6, 90, 94, ZC - halfAt(PROF_E, 92) - 1.6, ZC - halfAt(PROF_E, 92) - 0.4, mat.dark, sdClosed);   // handle
 }
 function setSlider(closed) { sdOpen.visible = !closed; sdClosed.visible = closed; }
@@ -548,7 +556,7 @@ jamb(SD1, 0, DOORH); jamb(SD2, 0, DOORH);
 quad([[SD1, DOORH, ZC - halfAt(PROF_E, DOORH)], [SD2, DOORH, ZC - halfAt(PROF_E, DOORH)], [SD2, DOORH, ZC - halfAt(PROF_F, DOORH)], [SD1, DOORH, ZC - halfAt(PROF_F, DOORH)]], mat.felt);
 quad([[SD1, 0.05, ZC - halfAt(PROF_E, 0)], [SD2, 0.05, ZC - halfAt(PROF_E, 0)], [SD2, 0.05, ZC - halfAt(PROF_F, 0)], [SD1, 0.05, ZC - halfAt(PROF_F, 0)]], mat.alu);
 // window reveals (inside)
-for (const side of [-1, 1]) for (const [x1, x2, y1, y2] of (side < 0 ? WIN.P : WIN.D)) {
+for (const side of [-1, 1]) for (const [x1, x2, y1, y2] of (side < 0 ? WIN_IN.P : WIN_IN.D)) {
   for (const x of [x1, x2]) crossShape(onSide(subProf(PROF_E, y1, y2), side).concat(onSide(subProf(PROF_F, y1, y2), side).reverse()), x, mat.felt);
   for (const y of [y1, y2]) quad([[x1, y, sideZ(side, halfAt(PROF_E, y))], [x2, y, sideZ(side, halfAt(PROF_E, y))], [x2, y, sideZ(side, halfAt(PROF_F, y))], [x1, y, sideZ(side, halfAt(PROF_F, y))]], mat.felt);
 }
@@ -607,7 +615,7 @@ for (const [x, tr] of [[FW, 86.6], [RW, 87.1]]) for (const s of [-1, 1]) {
 }
 // ---- interior trim (felt walls follow the real wall; ceiling follows the real roof)
 for (const side of [-1, 1]) {
-  sideBands(PROF_F, side, 0, L, 0, 165, side < 0 ? WIN.P.concat([[SD1, SD2, 0, DOORH]]) : WIN.D, mat.felt);
+  sideBands(PROF_F, side, 0, L, 0, 165, side < 0 ? WIN.P.concat([[SD1, SD2, 0, DOORH]]) : WIN_IN.D, mat.felt);
   sideBands(PROF_F, side, -122, 0, 0, 58, [], mat.felt);             // cab door panels
   sideBands(PROF_F, side, -14, 0, 58, 165, [], mat.felt);             // B-pillar trim
   sweep(onSide(subProf(PROF_F, 124, 165), side), p => aX(p[1]) + 4, -14, mat.felt, groups.upper);
@@ -950,8 +958,9 @@ const labelDefs = [
   ['Diagonal bath door 60 cm', [97, 150, 95]],
   ['Dometic 310 · centred · 31 cm clear each side', [59, 70, 150]],
   ['Rain head · shower zone 62 deep in front of the WC', [49, 180, 80]],
-  ['Galley 138 cm (moved forward) · sink under the window', [180, 104, 150]],
-  ['Factory glass opp. slider 139×74 · bath part blanked', [126, 136, W - 6]],
+  ['Galley 138 cm · window over the counter', [180, 104, 150]],
+  ['v24 window: CRL FW286L middle panel 97×72 · over the counter (sill = counter 92)', [200, 128, W - 6]],
+  ['Black insulated panel behind slider glass (fridge tower)', [33, 120, -10], () => mode !== 'walk'],
   ['Bed porthole ~30×20 (driver side)', [398, 140, W - 6]],
   ['Factory slider glass 138×73 · fridge tower behind the front 56 cm', [72, 145, -14], () => mode !== 'walk'],
   ['Rear-door glass 80×83 (fixed, privacy)', [L + 6, 160, 89], () => mode !== 'walk'],
