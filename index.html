@@ -265,7 +265,7 @@ const mat = {
   pillow2: M({ map: fabricTex('#6f8a8c', 8), transparent: true }),
   bedWood: M({ map: woodTex('#d6bd96', '#9c7d55', 80), transparent: true }),
   glass: new T.MeshPhongMaterial({ color: 0x8fb4d0, transparent: true, opacity: 0.22, shininess: 100, side: T.DoubleSide, depthWrite: false }),
-  tint: new T.MeshPhongMaterial({ color: 0x1d2a36, transparent: true, opacity: 0.62, shininess: 120, side: T.DoubleSide, depthWrite: false }),
+  tint: new T.MeshPhongMaterial({ color: 0x121a22, transparent: true, opacity: 0.8, shininess: 120, side: T.DoubleSide, depthWrite: false }),
   screen: new T.MeshBasicMaterial({ map: screenTex(), toneMapped: false }),
   tablet: new T.MeshBasicMaterial({ map: tabletTex(), toneMapped: false }),
   led: new T.MeshBasicMaterial({ color: 0xffd9a0, toneMapped: false }),
@@ -410,7 +410,8 @@ function segWall(a, b, y1, y2, t, m, parent) {   // slab from plan point a=[x,z]
 // ------------------------------------------------------------------ constants (cm; x = 0 at the back of the front seats, z = 0 passenger side, y = 0 cargo floor)
 const L = 437, W = 178, WALLT = 3, ZC = 89, CEIL = 198.6, GROUND = -71.1;
 const SD1 = 8, SD2 = 138, DOORH = 160;            // sliding door opening: Ford 51.2" x 63.0" = 130 x 160
-const WX1 = 245, WX2 = 300, WY1 = 108, WY2 = 150;  // original tinted desk window
+// v23 desk window = CRL FW286R passenger MIDDLE panel (fixed, 38-1/4" = 972 wide x ~722 tall [height est.]), in the Ford stamping behind the C-pillar
+const WX1 = 152, WX2 = 249.2, WY1 = 59.5, WY2 = 131.7;
 
 // ------------------------------------------------------------------ v22 TRUE FORD TRANSIT 148" EL HIGH-ROOF SHELL
 // Cross-section profiles [half-width from the centreline, height above the cargo floor] in cm.
@@ -496,7 +497,12 @@ const wsX = y => -125 + (y - 60) * 53 / 74;
 const aX = y => y < 60 ? -125 : (y <= 134 ? wsX(y) + 4 : capX(y));     // front edge of the side above the belt
 const FW = -123.5, RW = 251.4, WR = 35.5, WY = GROUND + WR;           // axles: 147.6" WB; 235/65R16C tyres (71 cm)
 const arch = xc => { const o = []; for (let k = 0; k < 9; k++) { const a = xc - 45 + k * 10, dx = a + 5 - xc; o.push([a, a + 10, -40, WY + Math.sqrt(Math.max(0, 43 * 43 - dx * dx))]); } return o; };
-const WIN = { P: [[WX1, WX2, WY1, WY2], [365, 415, 120, 150]], D: [[128, 178, 120, 150]] };    // v22: sink window follows the sink to x 128-178
+// v23 FACTORY-STYLE GLASS (28 % dark privacy tint). Side glass sits in the Ford stampings, bottom ~59 cm above the cargo floor (belt line, est.)
+//  P: desk = FW286R middle panel 97.2 x 72.2 (est. height).   (passenger bed window removed)
+//  D: Ford 'fixed glass opposite the slider' = FW293L size 138.7 x 73.8 (54-5/8 x 29-1/16") at x 4..143 -> lands mostly on the bath (blanked inside);
+//     bed porthole: small aftermarket ~30 x 20 cm (estimate) just above the mattress.
+const WIN = { P: [[WX1, WX2, WY1, WY2]], D: [[4.3, 143, 59, 132.8], [383, 413, 114, 134]] };
+const SDG = [4.25, 141.75, 59, 132.3];   // slider glass (Ford fixed/vented slider glass = FW293R size 137.5 x 73.3) on the CLOSED door
 
 // ---- exterior skin
 const cabGlass = new T.MeshPhongMaterial({ color: 0x2b3a47, transparent: true, opacity: 0.42, shininess: 120, side: T.DoubleSide, depthWrite: false }); clipMats.push(cabGlass);
@@ -521,11 +527,20 @@ for (const side of [-1, 1]) {
   rod([-93, 70, side < 0 ? -18 : W + 18], [-93, 66, sideZ(side, 100.5)], 1.6, mat.dark);
   box(-100.6, -99.8, 62, 66, side < 0 ? zm[0] + 3 : zm[1] - 7, side < 0 ? zm[0] + 7 : zm[1] - 3, M({ color: 0x1864ab }));   // mirror cams
 }
-// sliding door, slid open toward the rear (outside the body), with its tinted window (Arctic Tern 550x700)
-const sdWin = [198, 268, 100, 155];
-sideBands(PROF_E, -1, SD2 + 2, SD2 + 134, 0, DOORH + 1, [sdWin], mat.paint, root, 6);
-sweep(onSide(subProf(PROF_E, 100, 155), -1, 5.5), 198, 268, mat.tint);
-sideBands(PROF_E, -1, 195.5, 270.5, 97.5, 157.5, [sdWin], mat.rubber, root, 6.3);
+// sliding door with the factory slider glass. OPEN = slid back outside the body (walk views); CLOSED = flush (exterior views, shows the
+// fridge tower honestly behind the front ~56 cm of the glass)
+const sdOpen = new T.Group(), sdClosed = new T.Group(); root.add(sdOpen); root.add(sdClosed);
+{
+  const off = 136 - SD1 + 4;                       // open door shifted back by ~132 cm
+  const g = [SDG[0] + off, SDG[1] + off, SDG[2], SDG[3]];
+  sideBands(PROF_E, -1, SD1 - 4 + off, SD2 + 4 + off, 0, DOORH + 1, [g], mat.paint, sdOpen, 6);
+  sweep(onSide(subProf(PROF_E, g[2], g[3]), -1, 5.5), g[0], g[1], mat.tint, sdOpen);
+  sideBands(PROF_E, -1, SD1 - 4, SD2 + 4, 0, DOORH + 1, [SDG], mat.paint, sdClosed, 0.4);
+  sweep(onSide(subProf(PROF_E, SDG[2], SDG[3]), -1, 0.2), SDG[0], SDG[1], mat.tint, sdClosed);
+  box(SD2 - 6, SD2 + 6, 90, 94, ZC - halfAt(PROF_E, 92) - 1.6, ZC - halfAt(PROF_E, 92) - 0.4, mat.dark, sdClosed);   // handle
+}
+function setSlider(closed) { sdOpen.visible = !closed; sdClosed.visible = closed; }
+setSlider(false);
 sideBands(PROF_E, -1, SD2 + 6, SD2 + 18, 90, 94, [], mat.dark, root, 7);
 // door opening jambs/header/sill (between the outside skin and the trim)
 const jamb = (x, y1, y2) => crossShape(subProf(PROF_E, y1, y2).map(([h, y]) => [ZC - h, y]).concat(subProf(PROF_F, y1, y2).reverse().map(([h, y]) => [ZC - h, y])), x, mat.felt);
@@ -572,6 +587,14 @@ for (const z of [ZC, ZC - 78.35, ZC + 78.35]) box(L + 3, L + 3.6, 0, 188.7, z - 
 box(L + 3, L + 3.6, 188.3, 189.1, ZC - 78.35, ZC + 78.35, mat.darkClip);
 for (const s of [-1, 1]) box(L + 3, L + 5, 30, 110, s < 0 ? ZC - 100 : ZC + 89, s < 0 ? ZC - 89 : ZC + 100, mat.red);
 box(L + 3, L + 7, -48, -22, ZC - 97, ZC + 97, mat.dark);
+// v23 rear-door glass: Ford factory fixed privacy glass / VWD TL215-F & TR215-F size 795 W x 829 H (overall incl. black frit), y 68..151 (est.)
+const RDG = [68, 151];
+for (const s of [-1, 1]) {
+  const za = s < 0 ? ZC - 78.35 + 1.5 : ZC + 1.5, zb = s < 0 ? ZC - 1.5 : ZC + 78.35 - 1.5;
+  box(L + 3.6, L + 3.9, RDG[0], RDG[1], za, zb, mat.rubber);
+  box(L + 3.9, L + 4.2, RDG[0] + 4, RDG[1] - 4, za + 4, zb - 4, mat.tint);
+  box(L - 0.6, L - 0.3, Math.max(RDG[0] + 4, 112), RDG[1] - 4, za + 4, zb - 4, mat.tint);   // seen from inside, above the mattress
+}
 box(L + 3, L + 5, 196, 201, 80, 98, mat.red, groups.roof);
 // underbody, wheels + arch liners
 box(-197, L + 3, -40, -38.2, ZC - 95, ZC + 95, mat.dark);
@@ -639,108 +662,107 @@ ground.rotation.x = -Math.PI / 2; ground.position.y = GROUND; root.add(ground);
 const pad = new T.Mesh(new T.CircleGeometry(560, 48), M({ color: 0xa39d8f }));
 pad.rotation.x = -Math.PI / 2; pad.position.set(110, GROUND + 0.2, 89); root.add(pad);
 
-// ------------------------------------------------------------------ v22 BIGGER ANGLED WET BATH  (x 10..130)
-// straight aisle face x 10..60 (z 70), then a DIAGONAL wall (60,70) -> (130,128) = the galley corner. 120 x 105 minus the corner = 1.06 m2.
-// Door 1: 60 cm on the diagonal, hinged at the galley end, swings IN 90 deg. Door 2 (cab): v22 50 cm HINGED door in the front wall (z 70..120),
-// hinged at the aisle-side corner, swings into the bath and parks flat on the straight aisle wall (the real roof curve leaves no room to
-// park a sliding panel behind the driver seat). Toilet in the front-left corner, MaxxAir right above it, rain head in front of it.
-const BX1 = 10, BX2 = 130, BZ1 = 70, BZ2 = 175, BTOP = 196.5, FD1 = 70, FD2 = 120, DH = 190;
-const DGA = [60, 70], DGB = [130, 128];
+// ------------------------------------------------------------------ v23 COMPACT WET BATH  (inside x 10..108 = 98 long, z 63..175)
+// Dometic 310 (38.1 W x 48.3 D x 50.8 H, seat 45.7) back on the driver wall, centred x 59 -> 30.95 cm clear each side.
+// Shower = standing zone right in front of the bowl: z 63..124.7 (61.7 deep) x 10..84+ (>= 74 across), ceiling rain head over it.
+// Straight face z 63 (x 10..84) against the narrowed fridge tower, then a DIAGONAL wall (84,63) -> (108,128) = the galley corner.
+// Door 1: 60 cm on the diagonal, hinged at the fridge end, swings IN 90 deg (parks over the shower floor, clear of the WC).
+// Door 2 (cab): 50 cm hinged door in the front wall (z 65..115), swings into the bath and parks flat on the straight face.
+const BX1 = 10, BX2 = 108, BZ1 = 63, BZ2 = 175, BTOP = 196.5, FD1 = 65, FD2 = 115, DH = 190;
+const DGA = [84, 63], DGB = [108, 128];
 const dg = t => [DGA[0] + t * (DGB[0] - DGA[0]), DGA[1] + t * (DGB[1] - DGA[1])];
-const DD1 = dg(0.20), DD2 = dg(0.86), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
+const DD1 = dg(0.065), DD2 = dg(0.93), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
 const bathPoly = [[BX1, BZ1], DGA, DGB, [BX2, BZ2], [BX1, BZ2]];
 wallFit(FD2, W, 0, 199, BX1 - 2, BX1, mat.bathWall);                    // front wall behind the driver seat (follows the real wall/roof)
 wallFit(FD1, FD2, DH, 199, BX1 - 2, BX1, mat.bathWall);                 // header over the cab door
 box(BX1 - 2, BX1 + 1, 0, 198, FD1 - 2, FD1, mat.bathWall);              // corner post
 wallFit(DGB[1] - 1, W, 0, 199, BX2, BX2 + 2, mat.bathWall);              // rear wall = galley end
-box(BX1, DGA[0], 0, 198, BZ1 - 2, BZ1, mat.bathWall);                   // short straight aisle face
-segWall(DGA, DD1, 0, BTOP, 2, mat.bathWall);                            // diagonal wall, fridge side of the door
-segWall(DD2, DGB, 0, BTOP, 2, mat.bathWall);                            // diagonal wall, galley side of the door
+box(BX1, DGA[0], 0, 198, BZ1 - 2, BZ1, mat.bathWall);                   // straight face (against the fridge tower)
+segWall(DGA, DD1, 0, BTOP, 2, mat.bathWall);
+segWall(DD2, DGB, 0, BTOP, 2, mat.bathWall);
 segWall(DD1, DD2, DH, BTOP, 2, mat.bathWall);                           // header over the diagonal door
 for (const P of [DD1, DD2]) box(P[0] - 1.2, P[0] + 1.2, 0, DH, P[1] - 1.2, P[1] + 1.2, mat.bathWall);   // jambs
 planExtrude(sh => { sh.moveTo(bathPoly[0][0], -bathPoly[0][1]); for (const q of bathPoly.slice(1)) sh.lineTo(q[0], -q[1]); sh.lineTo(bathPoly[0][0], -bathPoly[0][1]); }, 0.3, 3, mat.shower);   // shower pan (whole floor)
-sweep(subProf(PROF_F, 3, 196).map(([h, y]) => [ZC + h - 0.6, y]).reverse(), BX1, BX2, mat.bathWall);   // wet-wall lining on the curved driver wall + roof edge
-cyl(37, 3, 3.3, 110, 3, mat.steel);                                     // drain under the shower spot
-// diagonal door, hinged at DD2 (galley end)
-const doorA = new T.Group(); doorA.position.set(DD2[0], 0, DD2[1]); root.add(doorA);
-const DOOR_A0 = Math.atan2(-(DD1[1] - DD2[1]), DD1[0] - DD2[0]);       // closed: leaf points from the hinge toward DD1
+sweep(subProf(PROF_F, 3, 196).map(([h, y]) => [ZC + h - 0.6, y]).reverse(), BX1, BX2, mat.bathWall);   // wet-wall lining (also blanks the factory glass inside the bath)
+cyl(49, 3, 3.3, 92, 3, mat.steel);                                      // drain in the middle of the standing zone
+// diagonal door, hinged at DD1 (fridge end)
+const doorA = new T.Group(); doorA.position.set(DD1[0], 0, DD1[1]); root.add(doorA);
+const DOOR_A0 = Math.atan2(-(DD2[1] - DD1[1]), DD2[0] - DD1[0]);       // closed: leaf points from the hinge toward DD2
 box(0, DLEN, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
 box(DLEN - 8, DLEN - 4, 92, 95, -3.5, 3.5, mat.steel, doorA);
-// v22 cab door: hinged at (10, 70), swings into the bath, parks along the aisle wall
 const doorF = new T.Group(); doorF.position.set(BX1, 0, FD1); root.add(doorF);
 box(-2, 0, 1, DH - 1, 0.5, FD2 - FD1 - 0.5, mat.bathDoor, doorF);
 box(-4, 2, 92, 106, FD2 - FD1 - 7, FD2 - FD1 - 5, mat.steel, doorF);
 let bathOpen = true;
 function setBathDoors(open) {
   bathOpen = open;
-  doorA.rotation.y = DOOR_A0 + (open ? Math.PI / 2 : 0);                 // swung in 90 deg
-  doorF.rotation.y = open ? Math.PI / 2 : 0;                               // flat on the aisle wall
+  doorA.rotation.y = DOOR_A0 - (open ? Math.PI / 2 : 0);                 // swung in 90 deg (toward the front wall)
+  doorF.rotation.y = open ? Math.PI / 2 : 0;                               // flat on the straight face
   const b = document.getElementById('tBath'); if (b) { b.textContent = 'Bath doors: ' + (open ? 'open' : 'closed'); b.classList.toggle('on', open); }
 }
-// toilet (Dometic 310: 38 x 48), front-left corner right behind the driver seat, back on the driver wall, facing the aisle
-const TXC = 37;
-rbox(TXC - 16.5, TXC + 16.5, 3, 40, 130, 172, 7, mat.shower);
-const bowl = new T.Mesh(new T.CylinderGeometry(16, 13, 6, 24), mat.shower); bowl.scale.set(1, 1, 1.15); bowl.position.set(TXC, 43, 146); root.add(bowl);
-rbox(TXC - 15.5, TXC + 15.5, 46, 48, 129, 162, 1, M({ color: 0xdfe3e6 }));
-rbox(TXC - 17.5, TXC + 17.5, 40, 52, 161, 174, 3, mat.shower);
-// v22: CEILING RAIN HEAD right in front of the toilet (stand at x 12..62, z 72..126 facing the bowl) + mixer on the driver wall
-const RHZ = 86, RHY = ceilY(RHZ);
-cyl(TXC, RHY - 6, RHY, RHZ, 1, mat.steelClip, groups.upper);
-cyl(TXC, RHY - 7.2, RHY - 6, RHZ, 10, mat.steelClip, groups.upper);
-cyl(TXC, RHY - 7.4, RHY - 7.2, RHZ, 9, M({ color: 0x9aa3ad }), groups.upper);
-box(30, 44, 104, 118, 173.4, 175, mat.steelClip);                        // thermostatic mixer on the driver wall above the WC tank
-cyl(37, 110, 112, 172.6, 2.4, mat.black);
-const bl = new T.Mesh(new T.CylinderGeometry(4, 4, 0.6, 16), mat.led); bl.position.set(95, ceilY(140) - 0.4, 140); groups.upper.add(bl);
-// v22 MaxxAir OVER THE TOILET: x 17..57 (bowl x), z 99..139 = centre 30 cm off the van centreline (bowl centre z ~146)
-const FX1 = 17, FX2 = 57, FZ1 = 99, FZ2 = 139, FZC = (FZ1 + FZ2) / 2;
+// toilet: Dometic 310, back on the driver wall (z 173), front of the bowl z 124.7, centred x 59
+const TXC = 59, TZF = 124.7;
+rbox(TXC - 16.5, TXC + 16.5, 3, 40, TZF + 1.5, 172, 7, mat.shower);
+const bowl = new T.Mesh(new T.CylinderGeometry(16, 13, 6, 24), mat.shower); bowl.scale.set(1, 1, 1.15); bowl.position.set(TXC, 43, TZF + 18.5); root.add(bowl);
+rbox(TXC - 15.5, TXC + 15.5, 46, 48, TZF + 0.3, TZF + 33.5, 1, M({ color: 0xdfe3e6 }));
+rbox(TXC - 19.05, TXC + 19.05, 40, 50.8, 160, 173, 3, mat.shower);
+// CEILING RAIN HEAD over the standing zone (x 49, z 80) + thermostatic mixer on the rear (galley) wall, right of the WC
+const RHX = 49, RHZ = 80, RHY = ceilY(RHZ);
+cyl(RHX, RHY - 6, RHY, RHZ, 1, mat.steelClip, groups.upper);
+cyl(RHX, RHY - 7.2, RHY - 6, RHZ, 10, mat.steelClip, groups.upper);
+cyl(RHX, RHY - 7.4, RHY - 7.2, RHZ, 9, M({ color: 0x9aa3ad }), groups.upper);
+box(106.4, 108, 104, 118, 131, 145, mat.steelClip);
+box(104.8, 106.4, 109, 113, 136, 140, mat.black);
+const bl = new T.Mesh(new T.CylinderGeometry(4, 4, 0.6, 16), mat.led); bl.position.set(95, ceilY(150) - 0.4, 150); groups.upper.add(bl);
+// MaxxAir OVER THE TOILET: x 39..79 (centred on the WC, x 59), z 99..139 = centre 30 cm off the van centreline (bowl centre z ~143)
+const FX1 = 39, FX2 = 79, FZ1 = 99, FZ2 = 139, FZC = (FZ1 + FZ2) / 2;
 const fanG = new T.Group(); fanG.position.set((FX1 + FX2) / 2, ceilY(FZC), FZC);
-fanG.rotation.x = Math.atan((ceilY(FZC - 10) - ceilY(FZC + 10)) / 20);    // garnish follows the ceiling's slope
+fanG.rotation.x = Math.atan((ceilY(FZC - 10) - ceilY(FZC + 10)) / 20);
 groups.upper.add(fanG);
-box(-17, 17, -0.6, 0, -17, 17, mat.dark, fanG);                          // shaft up to the roof
+box(-17, 17, -0.6, 0, -17, 17, mat.dark, fanG);
 for (const [a, b, c, d] of [[-20, 20, -20, -17], [-20, 20, 17, 20], [-20, -17, -20, 20], [17, 20, -20, 20]]) box(a, b, -1.6, -0.2, c, d, mat.white, fanG);
 box(-16, 16, -1.0, -0.8, -16, 16, mat.grey, fanG);
 for (let k = 0; k < 4; k++) { const b = box(-14, 14, -0.2, 0.2, -2, 2, mat.dark, fanG); b.position.set(0, -1.4, 0); b.rotation.y = k * Math.PI / 4; }
 
-// ------------------------------------------------------------------ v22 LONGER GALLEY  x 130..248: sink section 47 deep (to x 185), prep section 40 deep behind the chair
-const GX1 = 130, GXS = 185, GX2 = 248, GZW = 128, GZR = 135;
+// ------------------------------------------------------------------ v23 GALLEY MOVED FORWARD  x 110..248 (138 cm): sink section 47 deep (x 110..166) under the
+// factory glass, prep section 40 deep behind the chair (x 166..248)
+const GX1 = 108, GXS = 166, GX2 = 248, GZW = 128, GZR = 135;
 box(GX1 + 2.5, GXS, 0, 10, GZW + 3, W - 3, mat.dark); box(GXS, GX2, 0, 10, GZR + 3, W - 3, mat.dark);   // toe kicks
 box(GX1 + 2, GXS, 10, 88, GZW, W - 3, mat.sage); box(GXS, GX2, 10, 88, GZR, W - 3, mat.sage);         // cabinets
 rbox(GX1 + 2, GXS + 1, 88, 92, GZW - 1.5, W - 3, 1, mat.oak); rbox(GXS - 1, GX2, 88, 92, GZR - 1.5, W - 3, 1, mat.oak);   // butcher-block tops
-for (const x of [158]) box(x - 0.4, x + 0.4, 12, 86, GZW - 0.6, GZW, mat.dark);
-for (const x of [206, 227]) box(x - 0.4, x + 0.4, 12, 86, GZR - 0.6, GZR, mat.dark);
-for (const x of [143, 168]) box(x, x + 5, 78, 79.5, GZW - 1.8, GZW - 0.4, mat.black);
-for (const x of [193, 214, 235]) box(x, x + 5, 78, 79.5, GZR - 1.8, GZR - 0.4, mat.black);
+for (const x of [138]) box(x - 0.4, x + 0.4, 12, 86, GZW - 0.6, GZW, mat.dark);
+for (const x of [193, 220]) box(x - 0.4, x + 0.4, 12, 86, GZR - 0.6, GZR, mat.dark);
+for (const x of [121, 150]) box(x, x + 5, 78, 79.5, GZW - 1.8, GZW - 0.4, mat.black);
+for (const x of [177, 204, 232]) box(x, x + 5, 78, 79.5, GZR - 1.8, GZR - 0.4, mat.black);
 for (const y of [36, 60]) box(GXS + 1, GX2 - 1, y - 0.4, y + 0.4, GZR - 0.6, GZR, mat.dark);
-// sink (136..170 x 133..158) + faucet
-box(136, 170, 91.8, 92.15, 133, 158, mat.steel);
-box(138, 168, 92.15, 92.3, 135, 156, M({ color: 0x5b6168 }));
-cyl(153, 92.3, 92.5, 145.5, 2.2, mat.dark);
-cyl(153, 92, 118, 167, 1.4, mat.black);
-rod([153, 118, 167], [153, 120, 157], 1.2, mat.black); rod([153, 120, 157], [153, 113, 153], 1.1, mat.black);
-box(222, 244, 92, 93.5, 140, 162, mat.walnut);                          // cutting board on the new prep counter
-cyl(200, 92, 108, 160, 6, M({ color: 0x2e5a4f }));                      // kettle
+// sink (116..150 x 133..158) under the window + faucet
+box(116, 150, 91.8, 92.15, 133, 158, mat.steel);
+box(118, 148, 92.15, 92.3, 135, 156, M({ color: 0x5b6168 }));
+cyl(133, 92.3, 92.5, 145.5, 2.2, mat.dark);
+cyl(133, 92, 118, 167, 1.4, mat.black);
+rod([133, 118, 167], [133, 120, 157], 1.2, mat.black); rod([133, 120, 157], [133, 113, 153], 1.1, mat.black);
+box(212, 234, 92, 93.5, 140, 162, mat.walnut);                          // cutting board
+cyl(186, 92, 108, 160, 6, M({ color: 0x2e5a4f }));                      // kettle
 
 // ------------------------------------------------------------------ v18 TALL FRIDGE UNIT  x 5..60, z 4..66, floor to ~ceiling
 // Dometic NRX 80C (47.5 W x 53.7 D x 62.5 H cm, 75 L, 12/24 V) at ~85..148 cm, door toward the entry
 wallFit(4, BZ1 - 2, 0, 199, 5, 60, mat.birchClip);                         // v22: floor -> real ceiling, back scribed to the leaning wall, flush to the bath
-box(60, 60.6, 85, 147.5, 8, 55.5, mat.fridge);                          // fridge door (v22: 3 cm inboard, the wall leans in at 148)
-box(60.6, 62, 88, 145, 11, 13, mat.steel);                              // full-height handle
-box(60, 60.4, 80, 84, 5, 55.5, mat.dark);                               // vent / trim
+box(60, 60.6, 83, 145.5, 8, 55.5, mat.fridge);                          // fridge door (v22: 3 cm inboard, the wall leans in at 148)
+box(60.6, 62, 86, 143, 11, 13, mat.steel);                              // full-height handle
+box(60, 60.4, 78, 82, 5, 55.5, mat.dark);                               // vent / trim
 for (const y of [28, 54]) box(60, 60.5, y - 0.4, y + 0.4, 5, 55.5, mat.dark);       // drawer seams
 for (const y of [18, 44, 70]) box(60.5, 61.8, y, y + 1.4, 22, 36, mat.black);
 // built-in MICROWAVE (Danby DBMW0720 0.7 cu ft: 44 W x 33 D x 26 H), bottom 152, top 178; v22: z 18..62 (wall is at z 18 at 178 cm)
-box(60, 60.5, 148.5, 152, 8, 66, mat.dark);                              // shelf edge / lower vent between fridge + microwave
-box(60, 60.9, 152, 178, 18, 62, mat.steel);                              // microwave front
-box(60.9, 61.1, 155, 175, 21, 49, M({ color: 0x15181b }));              // door window
-box(60.9, 61.2, 155, 175, 51, 60, mat.charcoal);                         // control panel
-for (let k = 0; k < 4; k++) box(61.1, 61.3, 158 + k * 4, 160 + k * 4, 53, 58, mat.ledRGB);
-box(61.2, 62.4, 162, 168, 49.5, 50.5, mat.black);                        // door release
-box(60, 60.5, 178.5, 182, 20, 66, mat.dark);                             // vent strip over the microwave
-for (let z = 22; z < 64; z += 3) box(60.5, 60.7, 179, 181.5, z, z + 1.2, mat.grey);
-box(60, 60.5, 182.5, 182.9, 21, 67, mat.dark);                           // cupboard door seam, cupboard 182 -> ceiling
-box(60.5, 61.8, 185, 189, 42, 48, mat.black);
-box(60, 60.5, 2, 148, 55.6, 56.4, mat.dark);                             // v22: 12 cm pull-out pantry, stops under the microwave
-box(60.5, 61.8, 110, 130, 60.5, 62.5, mat.black);
+box(60, 60.5, 146, 148, 8, 60.5, mat.dark);                              // shelf edge / lower vent between fridge + microwave
+box(60, 60.9, 148, 174, 16.5, 60.5, mat.steel);                              // microwave front
+box(60.9, 61.1, 151, 171, 19.5, 47.5, M({ color: 0x15181b }));              // door window
+box(60.9, 61.2, 151, 171, 49.5, 58.5, mat.charcoal);                         // control panel
+for (let k = 0; k < 4; k++) box(61.1, 61.3, 154 + k * 4, 156 + k * 4, 51.5, 56.5, mat.ledRGB);
+box(61.2, 62.4, 158, 164, 47.9, 48.9, mat.black);                        // door release
+box(60, 60.5, 174.5, 178, 18, 60.5, mat.dark);                             // vent strip over the microwave
+for (let z = 21; z < 59; z += 3) box(60.5, 60.7, 175, 177.5, z, z + 1.2, mat.grey);
+box(60, 60.5, 178.5, 178.9, 19, 60.5, mat.dark);                           // cupboard door seam, cupboard 182 -> ceiling
+box(60.5, 61.8, 181, 185, 42, 48, mat.black);
 
 // ------------------------------------------------------------------ v23 SLIM WALL SHELVES (16 deep, 1.8 board, 4 cm lip), LOWERED + stepped
 // Main runs: board top 160 on both walls (v22: 180) -> ~28.5 cm clear above the lip against the real sloped wall (v22: ~13).
@@ -748,7 +770,7 @@ box(60.5, 61.8, 110, 130, 60.5, 62.5, mat.black);
 // Over the bed both sides stay at v22 height (top 180) so there's still ~69 cm above the mattress at the walls for sitting up.
 const SHD = 16, SHT = 1.8, SH_MAIN = 158.2, SH_DOOR = 170, SH_BED = 178.2;
 const SHY = SH_MAIN;                                     // (kept for anything else that refers to the main shelf height)
-const NOBRK = { P: [[245, 300], [365, 415]], D: [[128, 178]] };   // no brackets over windows
+const NOBRK = { P: [], D: [] };   // v23: all factory glass tops out at ~133, well below the shelves
 function shelfRun(x1, x2, side, y0, items) {             // side -1 = passenger, +1 = driver
   const dir = side < 0 ? 1 : -1, yt = y0 + SHT;
   const zWall = side < 0 ? zWallP(yt) : zWallD(yt);       // back edge scribed to the real wall at the board-top height
@@ -923,20 +945,22 @@ for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 
 
 // ------------------------------------------------------------------ LABELS
 const labelDefs = [
-  ['Bigger angled bath ≈1.06 m² · 2 doors', [70, 165, 120]],
+  ['Compact wet bath 98 × 110 (≈1.0 m²) · 2 doors', [60, 165, 110]],
   ['Cab door 50 cm · hinged, opens into the bath', [6, 150, 96]],
-  ['Diagonal bath door 60 cm', [100, 150, 100]],
-  ['Toilet behind the driver seat', [37, 70, 150]],
-  ['Rain head (ceiling) · stand in front of the WC', [37, 180, 86]],
-  ['Longer galley 118 cm · sink + prep · storage', [190, 104, 150]],
-  ['Window over the sink 50×30', [153, 156, W - 8]],
-  ['Bed window 50×30', [390, 156, 2]],
-  ['Sliding-door window 70×55', [233, 160, -8], () => mode !== 'walk'],
+  ['Diagonal bath door 60 cm', [97, 150, 95]],
+  ['Dometic 310 · centred · 31 cm clear each side', [59, 70, 150]],
+  ['Rain head · shower zone 62 deep in front of the WC', [49, 180, 80]],
+  ['Galley 138 cm (moved forward) · sink under the window', [180, 104, 150]],
+  ['Factory glass opp. slider 139×74 · bath part blanked', [126, 136, W - 6]],
+  ['Bed porthole ~30×20 (driver side)', [398, 140, W - 6]],
+  ['Factory slider glass 138×73 · fridge tower behind the front 56 cm', [72, 145, -14], () => mode !== 'walk'],
+  ['Rear-door glass 80×83 (fixed, privacy)', [L + 6, 160, 89], () => mode !== 'walk'],
+  ['Desk window: CRL FW286R middle panel 97×72', [200, 140, -12], () => mode !== 'walk'],
   ['Slim shelf lowered to 160 · ~28 cm clear above', [225, 182, 150]],
   ['Shelf over the sliding door · stepped up to 172', [118, 183, 26]],
   ['Over the bed: shelves kept at 180 (sit-up room)', [380, 192, 28], () => mode === 'walk'],
   ['Cab-over shelf 127×40', [-40, 190, 89]],
-  ['Microwave 0.7 cu ft (152–178 cm)', [62, 172, 40]],
+  ['Microwave 0.7 cu ft (148–174 cm)', [62, 168, 40]],
   ['Fridge tower · scribed to the real wall', [62, 192, 50]],
   ['Dometic NRX 80C fridge', [62, 120, 28]],
   ['Sliding door (130 × 160 cm)', [100, 140, 1]],
@@ -949,7 +973,7 @@ const labelDefs = [
   ['Bed 172×124 · front half lifts', [355, 126, 90]],
   ['Service bay: 24V battery, electrics, water heater, pump, fuel heater', [405, 48, 140], () => xray],
   ['Cat litter bay (sealed)', [333, 50, 83], () => xray],
-  ['MaxxAir fan over the toilet (adapter)', [37, 200, 119], () => !(mode !== 'walk' && !roofOn)],
+  ['MaxxAir over the toilet (centred on it, adapter)', [59, 200, 119], () => !(mode !== 'walk' && !roofOn)],
   ['Dometic RTX 2000 AC (over bed)', [410, 193, 84], () => !(mode !== 'walk' && !roofOn)],
   ['Solar 2 × 450 W', [218, 228, 89], () => mode !== 'walk' && roofOn],
   ['Rear wheel well (true axle)', [252, 30, 10], () => mode !== 'walk'],
@@ -1050,7 +1074,9 @@ function lookAtYP(px, py, pz, tx, ty, tz) {
   walk.yaw = Math.atan2(-dx, -dz); walk.pitch = Math.atan2(dy, Math.hypot(dx, dz));
 }
 function preset(name) {
+  setSlider(name === 'exterior' || name === 'exteriorD');
   if (name === 'dollhouse') { roofOn = false; setMode('dollhouse'); return; }
+  if (name === 'exteriorD') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(110, 75, 89); orbit.theta = 0.62; orbit.phi = 1.3; orbit.r = 780; return; }
   if (name === 'exterior') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(110, 75, 89); orbit.theta = -2.15; orbit.phi = 1.28; orbit.r = 760; return; }
   if (name === 'top') { setMode('top'); return; }
   setMode('walk'); setXray(false);
@@ -1064,8 +1090,8 @@ function preset(name) {
   if (name === 'couch') { setBathDoors(true); walk.pos.set(118, 0, 72); walk.eye = walk.targetEye = 165; lookAtYP(118, 165, 72, 240, 75, 172); }
   if (name === 'hall') { setBathDoors(true); walk.pos.set(300, 0, 98); walk.eye = walk.targetEye = 162; lookAtYP(300, 162, 98, 60, 135, 50); }
   if (name === 'interior') { setBathDoors(true); walk.pos.set(430, 0, 89); walk.eye = walk.targetEye = 168; lookAtYP(430, 168, 89, 0, 120, 89); }
-  if (name === 'toilet') { setBathDoors(true); walk.pos.set(112, 0, 96); walk.eye = walk.targetEye = 166; lookAtYP(112, 166, 96, 30, 110, 140); }
-  if (name === 'bath') { setBathDoors(true); walk.pos.set(97, 0, 84); walk.eye = walk.targetEye = 165; lookAtYP(97, 165, 84, 0, 182, 110); }
+  if (name === 'toilet') { setBathDoors(true); walk.pos.set(118, 0, 84); walk.eye = walk.targetEye = 166; lookAtYP(118, 166, 84, 50, 105, 140); }
+  if (name === 'bath') { setBathDoors(true); walk.pos.set(112, 0, 66); walk.eye = walk.targetEye = 168; lookAtYP(112, 168, 66, 40, 120, 140); }
 }
 
 // collision (plan view)
@@ -1074,14 +1100,14 @@ const walkable = [[-48, 424, 17, 161], [64 + PR, 136 - PR, -90, 20]];
 const obstacles = [
   // v18 bath shell (walls, toilet) — doors handled in blocked()
   [8, 10, FD2, 178], [8, 11, FD1 - 2, FD1], [8, DGA[0], BZ1 - 2, BZ1], [BX2, BX2 + 2, DGB[1] - 1, 178],
-  [TXC - 17.5, TXC + 17.5, 127, 178],
-  [130, 186, 126, 178], [185, 249, 133, 178],   // v22 galley: sink section + prep section
-  [3, 62, 0, 70],                          // tall fridge tower (flush to the bath)
+  [TXC - 19.05, TXC + 19.05, TZF, 178],
+  [110, 167, 126, 178], [166, 249, 133, 178],   // v23 galley: sink section + prep section
+  [3, 62, 0, 61],                          // tall fridge tower (flush to the bath)
   [140, 310, 0, 58], [248, 310, 120, 178], [310, 437, 0, 178],
   [-60, -8, 122, 172], [-60, -8, 6, 56], [-58, -18, 62, 116], [-130, -76, 0, 178],
 ];
 const doorObs = () => bathOpen ? [[BX1, BX1 + 50, FD1, FD1 + 2.5]] : [[BX1 - 2, BX1, FD1, FD2]];
-const leafA = () => { const a = DOOR_A0 + Math.PI / 2; return [DD2, [DD2[0] + DLEN * Math.cos(a), DD2[1] - DLEN * Math.sin(a)]]; };
+const leafA = () => { const a = DOOR_A0 - Math.PI / 2; return [DD1, [DD1[0] + DLEN * Math.cos(a), DD1[1] - DLEN * Math.sin(a)]]; };
 const segs = () => [[DGA, DD1], [DD2, DGB]].concat(bathOpen ? [leafA()] : [[DD1, DD2]]);
 function segDist(x, z, a, b) {
   const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
