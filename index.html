@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v18 · 3D walk-through</title>
+<title>Martin's van v19 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v18 · 3D</span>
+    <span id="title">Van v19 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v18 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v19 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -508,7 +508,7 @@ pad.rotation.x = -Math.PI / 2; pad.position.set(170, -69.8, 89); root.add(pad);
 
 // ------------------------------------------------------------------ v18 WALK-THROUGH WET BATH  x 10..112, z 70..175
 // door 1: aisle face (x 61..111), hinged at x 111, swings IN; door 2: SLIDING door in the front wall (z 70..122) into the
-// gap between the cab seats, parks behind the fixed driver seat. Walls stop at 196 (MaxxAir trim straddles the aisle wall).
+// gap between the cab seats, parks behind the fixed driver seat. Walls stop at 196; v19: the MaxxAir fan sits in the bath ceiling.
 const BX1 = 10, BX2 = 112, BZ1 = 70, BZ2 = 175, BTOP = 196, AD1 = 61, AD2 = 111, FD1 = 70, FD2 = 122, DH = 190;
 box(BX1 - 2, BX1, 0, BTOP, FD2, W, mat.bathWall);                       // front wall behind the driver seat
 box(BX1 - 2, BX1, DH, BTOP, FD1, FD2, mat.bathWall);                    // header over the cab door
@@ -547,8 +547,18 @@ rod([TXC, 188, W - 1], [TXC, 188, 166], 1, mat.steelClip);
 cyl(TXC, 186, 189, 164, 6, mat.steelClip);
 box(TXC - 6, TXC + 6, 110, 124, W - 2, W - 0.5, mat.steelClip);
 rod([BX1 + 2, 186, 126], [BX2 - 2, 186, 126], 0.8, mat.steelClip);
-const bl = new T.Mesh(new T.CylinderGeometry(5, 5, 0.6, 16), mat.led); bl.position.set(60, BTOP - 0.4, 120); groups.upper.add(bl);
-box(BX1, BX2, BTOP - 0.5, BTOP, BZ1, W, mat.bathWall, groups.upper);      // bath ceiling panel
+const bl = new T.Mesh(new T.CylinderGeometry(4, 4, 0.6, 16), mat.led); bl.position.set(30, BTOP - 0.4, 150); groups.upper.add(bl);
+// bath ceiling panel with the v19 MaxxAir opening (x 41..81, z 90..130)
+const FX1 = 41, FX2 = 81, FZ1 = 90, FZ2 = 130;
+box(BX1, BX2, BTOP - 0.5, BTOP, BZ1, FZ1, mat.bathWall, groups.upper);
+box(BX1, BX2, BTOP - 0.5, BTOP, FZ2, W, mat.bathWall, groups.upper);
+box(BX1, FX1, BTOP - 0.5, BTOP, FZ1, FZ2, mat.bathWall, groups.upper);
+box(FX2, BX2, BTOP - 0.5, BTOP, FZ1, FZ2, mat.bathWall, groups.upper);
+box(FX1 + 3, FX2 - 3, CEIL - 0.6, CEIL, FZ1 + 3, FZ2 - 3, mat.dark, groups.upper);        // shaft up to the roof
+for (const [a, b, c, d] of [[FX1, FX2, FZ1, FZ1 + 3], [FX1, FX2, FZ2 - 3, FZ2], [FX1, FX1 + 3, FZ1, FZ2], [FX2 - 3, FX2, FZ1, FZ2]])
+  box(a, b, BTOP - 1.6, BTOP - 0.4, c, d, mat.white, groups.upper);                      // interior garnish
+box(FX1 + 4, FX2 - 4, BTOP - 1.0, BTOP - 0.8, FZ1 + 4, FZ2 - 4, mat.grey, groups.upper);  // insect screen
+for (let k = 0; k < 4; k++) { const b = box(-14, 14, -0.2, 0.2, -2, 2, mat.dark, groups.upper); b.position.set((FX1 + FX2) / 2, BTOP - 1.4, (FZ1 + FZ2) / 2); b.rotation.y = k * Math.PI / 4; }
 
 // ------------------------------------------------------------------ v18 STRAIGHT GALLEY  x 112..185, 54 cm deep, no uppers
 const GX1 = 112, GX2 = 185, GZW = 121;
@@ -580,26 +590,25 @@ box(60.5, 61.8, 156, 164, 26, 30, mat.black);
 box(60, 60.5, 2, 190, 53.6, 54.4, mat.dark);                              // pull-out pantry seam
 box(60.5, 61.8, 110, 130, 58.5, 60.5, mat.black);
 
-// ------------------------------------------------------------------ v18 OVERHEAD SHELVES (both walls, 22 deep, boards at 158 + 178, 5 cm lips)
-const SHD = 22, SHL = [158, 178];
+// ------------------------------------------------------------------ v19 SLIM OVERHEAD SHELF (1 level, 16 deep, board 178.2..180, 4 cm lip), full length
+const SHD = 16, SHY = 178.2;
 function shelfRun(x1, x2, zWall, dir) {        // dir: +1 = shelf extends toward +z from the wall
   const zIn = zWall + dir * SHD, za = Math.min(zWall, zIn), zb = Math.max(zWall, zIn);
-  for (const y of SHL) {
-    box(x1, x2, y, y + 2, za, zb, mat.oak, groups.shelves);
-    box(x1, x2, y + 2, y + 6, dir > 0 ? zb - 1.8 : za, dir > 0 ? zb : za + 1.8, mat.oak, groups.shelves);   // lip
+  box(x1, x2, SHY, SHY + 1.8, za, zb, mat.oak, groups.shelves);                                        // thin board
+  box(x1, x2, SHY + 1.8, SHY + 4, dir > 0 ? zb - 1.2 : za, dir > 0 ? zb : za + 1.2, mat.oak, groups.shelves);   // low lip
+  const n = Math.round((x2 - x1) / 60);
+  for (let k = 0; k <= n; k++) {                                                                        // slim wall brackets
+    const xx = Math.min(Math.max(x1 + k * (x2 - x1) / n, x1 + 1), x2 - 1);
+    box(xx - 0.6, xx + 0.6, SHY - 6, SHY, dir > 0 ? za : zb - 3, dir > 0 ? za + 3 : zb, mat.oak, groups.shelves);
   }
-  for (let x = x1; x <= x2 + 0.1; x += (x2 - x1) / Math.round((x2 - x1) / 34)) {
-    const xx = Math.min(Math.max(x, x1 + 1), x2 - 1);
-    box(xx - 1, xx + 1, SHL[0], SHL[1] + 2, za, zb, mat.oak, groups.shelves);               // upright / bracket
-  }
-  box(x1, x2, SHL[0] - 0.8, SHL[0], dir > 0 ? zb - 3 : za, dir > 0 ? zb - 2 : za + 1, mat.led, groups.shelves);   // under-shelf LED
+  box(x1, x2, SHY - 0.4, SHY, dir > 0 ? zb - 2.5 : za + 1.5, dir > 0 ? zb - 1.5 : za + 2.5, mat.led, groups.shelves);   // LED strip
 }
-shelfRun(140, 310, 3, 1);       // passenger: over the desk, above the window
-shelfRun(BX2 + 2, 310, W - 3, -1);   // driver: over the galley -> couch
-// a few things on the shelves
-const boxes = [[150, 168, 3, 0xd9a066], [205, 222, 3, 0x6f8a8c], [262, 290, 3, 0xe6dccb], [125, 145, W - 21, 0xb0643a], [200, 230, W - 21, 0x8c949c], [265, 280, W - 21, 0x4f7d45]];
-for (const [a, b, z, c] of boxes) box(a, b, 160, 172, z + 2, z + 18, M({ color: c }), groups.shelves);
-for (let i = 0; i < 8; i++) box(232 + i * 3.2, 234.8 + i * 3.2, 180, 192 + (i % 3) * 1.5, 6, 21, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
+shelfRun(140, 432, 3, 1);           // passenger: rear edge of the sliding door -> rear doors (above window + tablet)
+shelfRun(BX2 + 2, 432, W - 3, -1);  // driver: bath rear wall -> rear doors
+// a few light things on the shelves
+const boxes = [[150, 166, 3, 0xd9a066], [262, 284, 3, 0xe6dccb], [345, 360, 3, 0xc9b79c], [130, 146, W - 17, 0xb0643a], [270, 284, W - 17, 0x8c949c], [400, 416, W - 17, 0xe6dccb]];
+for (const [a, b, z, c] of boxes) box(a, b, SHY + 1.8, SHY + 11, z + 2, z + 13, M({ color: c }), groups.shelves);
+for (let i = 0; i < 6; i++) box(215 + i * 3, 217.6 + i * 3, SHY + 1.8, SHY + 13 + (i % 3) * 1.2, 5, 16, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
 
 // ------------------------------------------------------------------ v18 CAB-OVER SHELF  x -62..-18, z 25.5..152.5 (127 x 44), above the seats
 box(-62, -18, 174, 176, 25.5, 152.5, mat.oak, groups.shelves);
@@ -710,20 +719,17 @@ box(59, 103, -30, -3, 130, 172, M({ color: 0x212529 }));
 // CO detector by the bed
 const co = new T.Mesh(new T.CylinderGeometry(5, 5, 2, 16), M({ color: 0xf8f0f0 }, true)); co.rotation.x = Math.PI / 2; co.position.set(338, 150, W - 1); root.add(co);
 
-// ------------------------------------------------------------------ ROOF: MaxxAir (front, over entry), RTX 2000 (over bed), 2 x 450 W solar
+// ------------------------------------------------------------------ ROOF: MaxxAir (v19: in the bath ceiling), RTX 2000 (over bed), 2 x 450 W solar
 // interior trims
-box(12, 52, CEIL - 1.5, CEIL - 0.2, 56, 96, mat.white, groups.upper);
-box(15, 49, CEIL - 1.7, CEIL - 1.4, 59, 93, mat.dark, groups.upper);
-for (let k = 0; k < 4; k++) { const b = box(18, 46, CEIL - 2.2, CEIL - 1.8, 74, 78, mat.grey, groups.upper); b.position.set(32, CEIL - 2, 76); b.rotation.y = k * Math.PI / 4; }
 box(391, 430, CEIL - 2, CEIL - 0.2, 60, 108, mat.white, groups.upper);
 for (let z = 64; z < 106; z += 4) box(395, 426, CEIL - 2.2, CEIL - 2, z, z + 1.5, mat.grey, groups.upper);
 // outside
 const R = groups.roof;
 rbox(369.5, 434, 207, 233, 46, 132, 6, M({ color: 0xe9ecef }), R);
 for (let x = 376; x < 430; x += 5) box(x, x + 2.5, 214, 226, 45, 46.2, mat.dark, R);
-rbox(10, 54, 207, 220, 54, 98, 4, M({ color: 0x2f3338 }), R);
-for (const z of [12, 166]) box(70, 312, 207, 211, z - 2, z + 2, mat.alu, R);
-for (const x of [75.5, 190.9]) {
+rbox(FX1 - 2, FX2 + 2, 207, 220, FZ1 - 2, FZ2 + 2, 4, M({ color: 0x2f3338 }), R);   // v19 fan cover over the bath
+for (const z of [12, 166]) box(98, 340, 207, 211, z - 2, z + 2, mat.alu, R);
+for (const x of [104.0, 219.4]) {
   box(x, x + 113.4, 211, 214, -1, 179, mat.alu, R);
   const sp = new T.Mesh(new T.PlaneGeometry(111.4, 178), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set(x + 56.7, 214.1, 89); R.add(sp);
 }
@@ -745,8 +751,8 @@ const labelDefs = [
   ['Sliding door → cab (52 cm)', [6, 150, 96]],
   ['Aisle door (swings in)', [86, 150, 68]],
   ['Straight galley 73 cm · sink · storage', [148, 104, 140]],
-  ['Overhead shelves ×2 (22 deep)', [225, 190, 165]],
-  ['Overhead shelves ×2', [225, 190, 13], () => mode === 'walk'],
+  ['Slim shelf · 16 deep · 180 cm · full length', [225, 192, 165]],
+  ['Slim shelf to the rear doors', [225, 192, 13], () => mode === 'walk'],
   ['Cab-over shelf 127×44', [-40, 190, 89]],
   ['Tall fridge unit · Dometic NRX 80C', [62, 150, 30]],
   ['Sliding door (130 cm)', [100, 160, 1]],
@@ -759,9 +765,9 @@ const labelDefs = [
   ['Bed 172×124 · front half lifts', [355, 126, 90]],
   ['Service bay: 24V battery, electrics, water heater, pump, fuel heater', [405, 48, 140], () => xray],
   ['Cat litter bay (sealed)', [333, 50, 83], () => xray],
-  ['MaxxAir roof fan', [32, 193, 76], () => !(mode !== 'walk' && !roofOn)],
+  ['MaxxAir fan (in the bath)', [61, 190, 110], () => !(mode !== 'walk' && !roofOn)],
   ['Dometic RTX 2000 AC (over bed)', [410, 193, 84], () => !(mode !== 'walk' && !roofOn)],
-  ['Solar 2 × 450 W', [190, 228, 89], () => mode !== 'walk' && roofOn],
+  ['Solar 2 × 450 W', [218, 228, 89], () => mode !== 'walk' && roofOn],
   ['Driver seat (fixed)', [-34, 150, 147]],
   ['Passenger seat (swivel)', [-34, 150, 31]],
 ];
@@ -866,7 +872,7 @@ function preset(name) {
   if (name === 'chair') { setMonitor('A'); walk.pos.set(216, 0, 96); walk.eye = walk.targetEye = 118; lookAtYP(216, 118, 96, 216, 108, 12); }
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
-  if (name === 'bath') { setBathDoors(true); walk.pos.set(108, 0, 80); walk.eye = walk.targetEye = 165; lookAtYP(108, 165, 80, 0, 105, 128); }
+  if (name === 'bath') { setBathDoors(true); walk.pos.set(97, 0, 84); walk.eye = walk.targetEye = 165; lookAtYP(97, 165, 84, 0, 182, 110); }
 }
 
 // collision (plan view)
