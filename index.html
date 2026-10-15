@@ -37,7 +37,7 @@
     <button data-preset="bed">Lying in bed → monitor</button><button data-preset="dollhouse">Dollhouse</button>
   </div>
   <div class="row extra">
-    <button id="tLabels">Labels</button><button id="tRoof">Roof + solar</button><button id="tXray">Under-bed x-ray</button><button id="tMon">Monitor: facing chair</button>
+    <button id="tLabels">Labels</button><button id="tRoof">Roof + solar</button><button id="tXray">Under-bed x-ray</button><button id="tMon">Monitor: facing chair</button><button id="tInvY">Invert Y: on</button>
   </div>
 </div>
 <div id="hint"></div>
@@ -860,6 +860,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyL') toggleLabels();
   if (e.code === 'KeyR') toggleRoof();
   if (e.code === 'KeyX') setXray(!xray);
+  if (e.code === 'KeyI') setInvertY(!invertY);
   if (e.code === 'KeyM') setMonitor(monitorPose === 'A' ? 'B' : 'A');
   if (e.code === 'Digit1') preset('door'); if (e.code === 'Digit2') preset('chair');
   if (e.code === 'Digit3') preset('bed'); if (e.code === 'Digit4') preset('dollhouse');
@@ -903,7 +904,12 @@ canvas.addEventListener('wheel', e => {
   else camera.fov = T.MathUtils.clamp(camera.fov + e.deltaY * 0.02, 40, 95), camera.updateProjectionMatrix();
 }, { passive: false });
 document.addEventListener('pointerlockchange', updateHint);
-function look(dx, dy, s) { walk.yaw -= dx * s; walk.pitch = T.MathUtils.clamp(walk.pitch - dy * s, -1.45, 1.45); }
+let invertY = true; try { const v = localStorage.getItem('van3d.invertY'); if (v !== null) invertY = v === '1'; } catch (_) {}
+function look(dx, dy, s) { walk.yaw -= dx * s; walk.pitch = T.MathUtils.clamp(walk.pitch + (invertY ? dy : -dy) * s, -1.45, 1.45); }
+function setInvertY(on) {
+  invertY = on; try { localStorage.setItem('van3d.invertY', on ? '1' : '0'); } catch (_) {}
+  const b = document.getElementById('tInvY'); b.textContent = 'Invert Y: ' + (on ? 'on' : 'off'); b.classList.toggle('on', on);
+}
 function topPan(dx, dy) {
   const k = (ortho.right - ortho.left) / innerWidth, portrait = innerWidth < innerHeight;
   if (portrait) { topv.x += dy * k; topv.z += dx * k; } else { topv.x -= dx * k; topv.z -= dy * k; }
@@ -944,9 +950,11 @@ function updateHint() {
   if (modeName === 'top') h.textContent = 'To-scale top view · drag to pan · ' + (isTouch ? 'pinch' : 'wheel') + ' to zoom';
   else if (mode !== 'walk') h.textContent = isTouch ? 'Drag to orbit · pinch to zoom · two fingers to pan' : 'Drag to orbit · wheel to zoom · right-drag to pan · V = walk';
   else if (isTouch) h.textContent = 'Left stick to walk · drag anywhere to look';
-  else h.textContent = document.pointerLockElement ? 'WASD / arrows to walk · mouse to look · Esc to free the mouse · V = dollhouse' : 'Click the view to look around · WASD / arrows to walk · V = dollhouse';
+  else h.textContent = document.pointerLockElement ? 'WASD / arrows to walk · mouse to look · Esc to free the mouse · I = invert Y · V = dollhouse' : 'Click the view to look around · WASD / arrows to walk · V = dollhouse';
 }
 document.getElementById('tLabels').classList.add('on');
+document.getElementById('tInvY').addEventListener('click', () => setInvertY(!invertY));
+setInvertY(invertY);
 
 // ------------------------------------------------------------------ LOOP
 const clock = new T.Clock();
