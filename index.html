@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v22 · 3D walk-through</title>
+<title>Martin's van v23 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v22 · 3D</span>
+    <span id="title">Van v23 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v22 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v23 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -742,26 +742,47 @@ box(60.5, 61.8, 185, 189, 42, 48, mat.black);
 box(60, 60.5, 2, 148, 55.6, 56.4, mat.dark);                             // v22: 12 cm pull-out pantry, stops under the microwave
 box(60.5, 61.8, 110, 130, 60.5, 62.5, mat.black);
 
-// ------------------------------------------------------------------ v19 SLIM OVERHEAD SHELF (1 level, 16 deep, board 178.2..180, 4 cm lip), full length
-const SHD = 16, SHY = 178.2;
-const SPW = zWallP(SHY + 1.8), SDW = zWallD(SHY + 1.8);   // v22: true wall position at shelf height (19 cm in from the belt-line wall)
-function shelfRun(x1, x2, zWall, dir) {        // dir: +1 = shelf extends toward +z from the wall
+// ------------------------------------------------------------------ v23 SLIM WALL SHELVES (16 deep, 1.8 board, 4 cm lip), LOWERED + stepped
+// Main runs: board top 160 on both walls (v22: 180) -> ~28.5 cm clear above the lip against the real sloped wall (v22: ~13).
+// Over the sliding door the span steps up to top 171.8 (bottom 170) to clear the 160 opening + header trim/roller track (160..168).
+// Over the bed both sides stay at v22 height (top 180) so there's still ~69 cm above the mattress at the walls for sitting up.
+const SHD = 16, SHT = 1.8, SH_MAIN = 158.2, SH_DOOR = 170, SH_BED = 178.2;
+const SHY = SH_MAIN;                                     // (kept for anything else that refers to the main shelf height)
+const NOBRK = { P: [[245, 300], [365, 415]], D: [[128, 178]] };   // no brackets over windows
+function shelfRun(x1, x2, side, y0, items) {             // side -1 = passenger, +1 = driver
+  const dir = side < 0 ? 1 : -1, yt = y0 + SHT;
+  const zWall = side < 0 ? zWallP(yt) : zWallD(yt);       // back edge scribed to the real wall at the board-top height
   const zIn = zWall + dir * SHD, za = Math.min(zWall, zIn), zb = Math.max(zWall, zIn);
-  box(x1, x2, SHY, SHY + 1.8, za, zb, mat.oak, groups.shelves);                                        // thin board
-  box(x1, x2, SHY + 1.8, SHY + 4, dir > 0 ? zb - 1.2 : za, dir > 0 ? zb : za + 1.2, mat.oak, groups.shelves);   // low lip
-  const n = Math.round((x2 - x1) / 60), wb = dir > 0 ? zWallP(SHY - 6) : zWallD(SHY - 6);
-  for (let k = 0; k <= n; k++) {                                                                        // brackets reach back to the leaning wall
-    const xx = Math.min(Math.max(x1 + k * (x2 - x1) / n, x1 + 1), x2 - 1);
-    box(xx - 0.6, xx + 0.6, SHY - 6, SHY, dir > 0 ? wb : zb - 3, dir > 0 ? za + 3 : wb, mat.oak, groups.shelves);
+  box(x1, x2, y0, yt, za, zb, mat.oak, groups.shelves);                                              // board
+  box(x1, x2, yt, yt + 4, dir > 0 ? zb - 1.2 : za, dir > 0 ? zb : za + 1.2, mat.oak, groups.shelves);   // lip (rounded edge in reality)
+  for (const xe of [x1, x2]) {                                                                      // end cheeks
+    const xa = xe === x1 ? x1 : x2 - 1.2; box(xa, xa + 1.2, yt, yt + 4, za, zb, mat.oak, groups.shelves);
   }
-  box(x1, x2, SHY - 0.4, SHY, dir > 0 ? zb - 2.5 : za + 1.5, dir > 0 ? zb - 1.5 : za + 2.5, mat.led, groups.shelves);   // LED strip
+  const bh = 5, wb = side < 0 ? zWallP(y0 - bh) : zWallD(y0 - bh), skip = side < 0 ? NOBRK.P : NOBRK.D;
+  const n = Math.max(1, Math.round((x2 - x1) / 55));
+  for (let k = 0; k <= n; k++) {
+    let xx = Math.min(Math.max(x1 + k * (x2 - x1) / n, x1 + 1.5), x2 - 1.5);
+    for (const [a, b] of skip) if (y0 - bh < 154 && xx > a - 2 && xx < b + 2) xx = (xx - a < b - xx) ? a - 2.5 : b + 2.5;
+    if (xx < x1 + 1 || xx > x2 - 1) continue;
+    box(xx - 0.6, xx + 0.6, y0 - bh, y0, dir > 0 ? wb : zb - 3, dir > 0 ? za + 3 : wb, mat.oak, groups.shelves);
+  }
+  box(x1, x2, y0 - 0.4, y0, dir > 0 ? zb - 2.5 : za + 1.5, dir > 0 ? zb - 1.5 : za + 2.5, mat.led, groups.shelves);   // LED strip
+  for (const [a, b, h, c] of (items || [])) {                                                        // bins / books, kept clear of the sloped wall
+    const z0 = dir > 0 ? zWall + 6 : zWall - 15; box(a, b, yt, yt + h, z0, z0 + 9, M({ color: c }), groups.shelves);
+  }
+  return { zWall, zLip: zIn };
 }
-shelfRun(60, 432, SPW, 1);            // passenger: fridge tower -> over the sliding door (header 160) -> rear doors
-shelfRun(BX2 + 2, 432, SDW, -1);      // driver: bath rear wall -> rear doors
-// a few low things on the shelves (the roof curve leaves a wedge: ~13 cm at the lip, ~0 at the wall)
-const boxes = [[78, 96, 1, 0xc9b79c], [112, 126, 1, 0x8c949c], [150, 166, 1, 0xd9a066], [262, 284, 1, 0xe6dccb], [345, 360, 1, 0xc9b79c], [150, 166, -1, 0xb0643a], [270, 284, -1, 0x8c949c], [400, 416, -1, 0xe6dccb]];
-for (const [a, b, d, c] of boxes) { const z0 = d > 0 ? SPW + 7 : SDW - 15; box(a, b, SHY + 1.8, SHY + 8, z0, z0 + 8, M({ color: c }), groups.shelves); }
-for (let i = 0; i < 6; i++) box(215 + i * 3, 217.6 + i * 3, SHY + 1.8, SHY + 9 + (i % 3) * 0.8, SPW + 6, SPW + 15, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
+// header trim + roller-track cover over the sliding door opening (160..168)
+box(SD1, SD2, DOORH, DOORH + 8, zWallP(DOORH + 4) - 0.5, zWallP(DOORH + 4) + 2, mat.dark);
+// passenger: fridge tower -> door span (stepped up) -> desk span (lowered) -> bed span (v22 height)
+shelfRun(60, 140, -1, SH_DOOR, [[78, 96, 7, 0xc9b79c], [112, 126, 9, 0x8c949c]]);
+shelfRun(140, 310, -1, SH_MAIN, [[150, 166, 14, 0xd9a066], [262, 284, 15, 0xe6dccb], [292, 306, 12, 0x8c949c]]);
+shelfRun(310, 432, -1, SH_BED, [[345, 360, 6, 0xc9b79c]]);
+// driver: bath rear wall -> galley + couch span (lowered) -> bed span (v22 height)
+shelfRun(BX2 + 2, 310, 1, SH_MAIN, [[140, 158, 14, 0xb0643a], [196, 214, 15, 0xe6dccb], [270, 284, 13, 0x8c949c]]);
+shelfRun(310, 432, 1, SH_BED, [[400, 416, 6, 0xe6dccb]]);
+// books on the desk-span shelf
+for (let i = 0; i < 8; i++) box(215 + i * 3, 217.6 + i * 3, SH_MAIN + SHT, SH_MAIN + SHT + 13 + (i % 3) * 1, zWallP(SH_MAIN + SHT) + 6, zWallP(SH_MAIN + SHT) + 15, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
 
 // ------------------------------------------------------------------ CAB-OVER SHELF  x -58..-18, z 25.5..152.5 (127 x 40), above the seats (v22: 4 cm shallower for the real roof cap)
 box(-58, -18, 174, 176, 25.5, 152.5, mat.oak, groups.shelves);
@@ -911,9 +932,9 @@ const labelDefs = [
   ['Window over the sink 50×30', [153, 156, W - 8]],
   ['Bed window 50×30', [390, 156, 2]],
   ['Sliding-door window 70×55', [233, 160, -8], () => mode !== 'walk'],
-  ['Slim shelf · 16 deep · on the curved wall at 178', [225, 192, 150]],
-  ['Shelf over the sliding door', [100, 190, 28]],
-  ['Slim shelf to the rear doors', [225, 192, 28], () => mode === 'walk'],
+  ['Slim shelf lowered to 160 · ~28 cm clear above', [225, 182, 150]],
+  ['Shelf over the sliding door · stepped up to 172', [118, 183, 26]],
+  ['Over the bed: shelves kept at 180 (sit-up room)', [380, 192, 28], () => mode === 'walk'],
   ['Cab-over shelf 127×40', [-40, 190, 89]],
   ['Microwave 0.7 cu ft (152–178 cm)', [62, 172, 40]],
   ['Fridge tower · scribed to the real wall', [62, 192, 50]],
@@ -1036,6 +1057,7 @@ function preset(name) {
   if (name === 'door') { walk.pos.set(95, 0, -50); walk.eye = walk.targetEye = 168; lookAtYP(95, 168, -50, 300, 95, 125); }
   if (name === 'chair') { setMonitor('A'); walk.pos.set(216, 0, 96); walk.eye = walk.targetEye = 118; lookAtYP(216, 118, 96, 216, 108, 12); }
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
+  if (name === 'shelves') { setBathDoors(true); walk.pos.set(304, 0, 89); walk.eye = walk.targetEye = 165; lookAtYP(304, 165, 89, 110, 148, 89); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
   if (name === 'entry') { setBathDoors(true); walk.pos.set(132, 0, 4); walk.eye = walk.targetEye = 160; lookAtYP(132, 160, 4, 62, 118, 112); }
   if (name === 'front') { setBathDoors(true); walk.pos.set(172, 0, 96); walk.eye = walk.targetEye = 162; lookAtYP(172, 162, 96, 30, 128, 70); }
