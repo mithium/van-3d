@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v19 · 3D walk-through</title>
+<title>Martin's van v20 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,12 +28,12 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v19 · 3D</span>
+    <span id="title">Van v20 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
   <div class="row extra">
-    <button data-preset="door">From the sliding door</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Galley + shelves</button><button data-preset="chair">Gaming chair</button>
+    <button data-preset="door">From the sliding door</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Galley + shelves</button><button data-preset="chair">Gaming chair</button>
     <button data-preset="bed">Lying in bed → monitor</button><button data-preset="dollhouse">Dollhouse</button>
   </div>
   <div class="row extra">
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v19 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v20 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -398,10 +398,17 @@ function sideShape(pts, z, m, holes, parent) {
   mesh.position.z = z; (parent || root).add(mesh); return mesh;
 }
 const rectPts = (x1, y1, x2, y2) => [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
+function segWall(a, b, y1, y2, t, m, parent) {   // slab from plan point a=[x,z] to b, thickness t (centred)
+  const dx = b[0] - a[0], dz = b[1] - a[1], len = Math.hypot(dx, dz);
+  const geo = new T.BoxGeometry(len, y2 - y1, t); worldBoxUV(geo, len, y2 - y1, t);
+  const mesh = new T.Mesh(geo, m);
+  mesh.position.set((a[0] + b[0]) / 2, (y1 + y2) / 2, (a[1] + b[1]) / 2); mesh.rotation.y = Math.atan2(-dz, dx);
+  (parent || root).add(mesh); return mesh;
+}
 
 // ------------------------------------------------------------------ constants from make_layout_v18.py
 const L = 437, W = 178, WALLT = 3, CEIL = 198, WALLTOP = 175;
-const SD1 = 8, SD2 = 138, DOORH = 172;            // sliding door opening
+const SD1 = 8, SD2 = 138, DOORH = 160;            // sliding door opening (v20: Ford spec 63.0" = 160 cm high)
 const WX1 = 245, WX2 = 300, WY1 = 108, WY2 = 150;  // tinted window
 const CABWIN = [[-56, 102], [-12, 102], [-12, 150], [-44, 150]];
 
@@ -506,24 +513,32 @@ ground.rotation.x = -Math.PI / 2; ground.position.y = -70; root.add(ground);
 const pad = new T.Mesh(new T.CircleGeometry(520, 48), M({ color: 0xa39d8f }));
 pad.rotation.x = -Math.PI / 2; pad.position.set(170, -69.8, 89); root.add(pad);
 
-// ------------------------------------------------------------------ v18 WALK-THROUGH WET BATH  x 10..112, z 70..175
-// door 1: aisle face (x 61..111), hinged at x 111, swings IN; door 2: SLIDING door in the front wall (z 70..122) into the
-// gap between the cab seats, parks behind the fixed driver seat. Walls stop at 196; v19: the MaxxAir fan sits in the bath ceiling.
-const BX1 = 10, BX2 = 112, BZ1 = 70, BZ2 = 175, BTOP = 196, AD1 = 61, AD2 = 111, FD1 = 70, FD2 = 122, DH = 190;
+// ------------------------------------------------------------------ v20 ANGLED WALK-THROUGH WET BATH
+// straight aisle face x 10..60 (z 70), then a DIAGONAL wall (60,70) -> (112,121) = the sink/galley corner.
+// Door 1: 55 cm on the diagonal, hinged at the sink end, swings IN ~135° and parks on the galley end wall.
+// Door 2: SLIDING door in the front wall (z 70..122) into the gap between the cab seats. Toilet in the front-left corner.
+const BX1 = 10, BX2 = 112, BZ1 = 70, BZ2 = 175, BTOP = 196, FD1 = 70, FD2 = 122, DH = 190;
+const DGA = [60, 70], DGB = [112, 121];
+const dg = t => [DGA[0] + t * (DGB[0] - DGA[0]), DGA[1] + t * (DGB[1] - DGA[1])];
+const DD1 = dg(0.12), DD2 = dg(0.88), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
+const bathPoly = [[BX1, BZ1], DGA, DGB, [BX2, BZ2], [BX1, BZ2]];
 box(BX1 - 2, BX1, 0, BTOP, FD2, W, mat.bathWall);                       // front wall behind the driver seat
 box(BX1 - 2, BX1, DH, BTOP, FD1, FD2, mat.bathWall);                    // header over the cab door
 box(BX1 - 2, BX1 + 1, 0, BTOP, FD1 - 2, FD1, mat.bathWall);             // corner post
-box(BX2, BX2 + 2, 0, BTOP, BZ1 - 2, W, mat.bathWall);                   // rear wall (galley side)
-box(BX1, AD1, 0, BTOP, BZ1 - 2, BZ1, mat.bathWall);                     // aisle wall in front of the door
-box(AD2, BX2, 0, BTOP, BZ1 - 2, BZ1, mat.bathWall);
-box(AD1, AD2, DH, BTOP, BZ1 - 2, BZ1, mat.bathWall);                    // header over the aisle door
-box(BX1, BX2, 0.3, 3, BZ1, BZ2 + 3, mat.shower);                        // shower pan (whole floor)
+box(BX2, BX2 + 2, 0, BTOP, DGB[1] - 1, W, mat.bathWall);                // rear wall = galley end (sink corner -> driver wall)
+box(BX1, DGA[0], 0, BTOP, BZ1 - 2, BZ1, mat.bathWall);                  // short straight aisle face
+segWall(DGA, DD1, 0, BTOP, 2, mat.bathWall);                            // diagonal wall, fridge side of the door
+segWall(DD2, DGB, 0, BTOP, 2, mat.bathWall);                            // diagonal wall, sink side of the door
+segWall(DD1, DD2, DH, BTOP, 2, mat.bathWall);                           // header over the diagonal door
+for (const P of [DD1, DD2]) box(P[0] - 1.2, P[0] + 1.2, 0, DH, P[1] - 1.2, P[1] + 1.2, mat.bathWall);   // jambs
+planExtrude(sh => { sh.moveTo(bathPoly[0][0], -bathPoly[0][1]); for (const q of bathPoly.slice(1)) sh.lineTo(q[0], -q[1]); sh.lineTo(bathPoly[0][0], -bathPoly[0][1]); }, 0.3, 3, mat.shower);   // shower pan (whole floor)
 box(BX1, BX2, 3, BTOP, W - 3.6, W - 2.4, mat.bathWall);                   // wet-wall lining on the driver wall
-cyl(30, 3, 3.3, 96, 3, mat.steel);                                      // drain in the path strip
-// aisle door, hinged at x = AD2
-const doorA = new T.Group(); doorA.position.set(AD2, 0, BZ1 - 1); root.add(doorA);
-box(-50, 0, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
-box(-46, -42, 92, 95, -3.5, 3.5, mat.steel, doorA);
+cyl(84, 3, 3.3, 148, 3, mat.steel);                                     // drain in the shower corner
+// diagonal door, hinged at DD2 (sink end)
+const doorA = new T.Group(); doorA.position.set(DD2[0], 0, DD2[1]); root.add(doorA);
+const DOOR_A0 = Math.atan2(-(DD1[1] - DD2[1]), DD1[0] - DD2[0]);       // closed: leaf points from the hinge toward DD1
+box(0, DLEN, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
+box(DLEN - 8, DLEN - 4, 92, 95, -3.5, 3.5, mat.steel, doorA);
 // sliding cab door (rides in a track just inside the front wall)
 const doorF = new T.Group(); root.add(doorF);
 box(BX1, BX1 + 2.4, 1, DH - 1, FD1, FD2, mat.bathDoor, doorF);
@@ -532,28 +547,28 @@ box(BX1 - 1.5, BX1 + 4, DH, DH + 2, FD1, W - 3, mat.steelClip);           // tra
 let bathOpen = true;
 function setBathDoors(open) {
   bathOpen = open;
-  doorA.rotation.y = open ? 1.45 : 0;                                    // swung in against the rear wall
+  doorA.rotation.y = DOOR_A0 + (open ? 2.35 : 0);                        // swung in ~135°, flat on the galley end wall
   doorF.position.z = open ? (FD2 - FD1) - 2 : 0;                          // slid behind the driver seat
   const b = document.getElementById('tBath'); if (b) { b.textContent = 'Bath doors: ' + (open ? 'open' : 'closed'); b.classList.toggle('on', open); }
 }
-// toilet (Dometic 310: 38 x 48), back on the driver wall, facing the aisle
-const TXC = 81;
+// toilet (Dometic 310: 38 x 48), v20: front-left corner right behind the driver seat, back on the driver wall, facing the aisle
+const TXC = 37;
 rbox(TXC - 16.5, TXC + 16.5, 3, 40, 130, 172, 7, mat.shower);
 const bowl = new T.Mesh(new T.CylinderGeometry(16, 13, 6, 24), mat.shower); bowl.scale.set(1, 1, 1.15); bowl.position.set(TXC, 43, 146); root.add(bowl);
 rbox(TXC - 15.5, TXC + 15.5, 46, 48, 129, 162, 1, M({ color: 0xdfe3e6 }));
 rbox(TXC - 17.5, TXC + 17.5, 40, 52, 161, 174, 3, mat.shower);
-// shower head on the driver wall right above the toilet + mixer + curtain rail along the path
-rod([TXC, 188, W - 1], [TXC, 188, 166], 1, mat.steelClip);
-cyl(TXC, 186, 189, 164, 6, mat.steelClip);
-box(TXC - 6, TXC + 6, 110, 124, W - 2, W - 0.5, mat.steelClip);
-rod([BX1 + 2, 186, 126], [BX2 - 2, 186, 126], 0.8, mat.steelClip);
+// shower head on the driver wall over the shower corner (beside the WC) + mixer
+rod([84, 188, W - 1], [84, 188, 166], 1, mat.steelClip);
+cyl(84, 186, 189, 164, 6, mat.steelClip);
+box(78, 90, 110, 124, W - 2, W - 0.5, mat.steelClip);
+rod([BX1 + 2, 186, 125], [98, 186, 125], 0.8, mat.steelClip);           // curtain rail (keeps the path drier)
 const bl = new T.Mesh(new T.CylinderGeometry(4, 4, 0.6, 16), mat.led); bl.position.set(30, BTOP - 0.4, 150); groups.upper.add(bl);
-// bath ceiling panel with the v19 MaxxAir opening (x 41..81, z 90..130)
-const FX1 = 41, FX2 = 81, FZ1 = 90, FZ2 = 130;
-box(BX1, BX2, BTOP - 0.5, BTOP, BZ1, FZ1, mat.bathWall, groups.upper);
-box(BX1, BX2, BTOP - 0.5, BTOP, FZ2, W, mat.bathWall, groups.upper);
-box(BX1, FX1, BTOP - 0.5, BTOP, FZ1, FZ2, mat.bathWall, groups.upper);
-box(FX2, BX2, BTOP - 0.5, BTOP, FZ1, FZ2, mat.bathWall, groups.upper);
+// bath ceiling panel (angled outline) with the v20 MaxxAir opening (x 41..81, z 95..135)
+const FX1 = 41, FX2 = 81, FZ1 = 95, FZ2 = 135;
+planExtrude(sh => {
+  sh.moveTo(bathPoly[0][0], -bathPoly[0][1]); for (const q of bathPoly.slice(1)) sh.lineTo(q[0], -q[1]); sh.lineTo(bathPoly[0][0], -bathPoly[0][1]);
+  const h = new T.Path(); h.moveTo(FX1, -FZ1); h.lineTo(FX1, -FZ2); h.lineTo(FX2, -FZ2); h.lineTo(FX2, -FZ1); h.lineTo(FX1, -FZ1); sh.holes.push(h);
+}, BTOP - 0.5, BTOP, mat.bathWall, groups.upper);
 box(FX1 + 3, FX2 - 3, CEIL - 0.6, CEIL, FZ1 + 3, FZ2 - 3, mat.dark, groups.upper);        // shaft up to the roof
 for (const [a, b, c, d] of [[FX1, FX2, FZ1, FZ1 + 3], [FX1, FX2, FZ2 - 3, FZ2], [FX1, FX1 + 3, FZ1, FZ2], [FX2 - 3, FX2, FZ1, FZ2]])
   box(a, b, BTOP - 1.6, BTOP - 0.4, c, d, mat.white, groups.upper);                      // interior garnish
@@ -585,9 +600,16 @@ box(60.6, 62, 88, 145, 8, 10, mat.steel);                               // full-
 box(60, 60.4, 80, 84, 5, 52.5, mat.dark);                               // vent / trim
 for (const y of [28, 54]) box(60, 60.5, y - 0.4, y + 0.4, 5, 52.5, mat.dark);       // drawer seams
 for (const y of [18, 44, 70]) box(60.5, 61.8, y, y + 1.4, 22, 36, mat.black);
-box(60, 60.5, 150, 150.8, 5, 66, mat.dark);                              // cupboard over
-box(60.5, 61.8, 156, 164, 26, 30, mat.black);
-box(60, 60.5, 2, 190, 53.6, 54.4, mat.dark);                              // pull-out pantry seam
+// v20: built-in MICROWAVE over the fridge (Danby DBMW0720 0.7 cu ft: 44 W x 33 D x 26 H), bottom 152, top 178
+box(60, 60.5, 148.5, 152, 5, 53.5, mat.dark);                            // shelf edge / lower vent between fridge + microwave
+box(60, 60.9, 152, 178, 6, 50, mat.steel);                               // microwave front
+box(60.9, 61.1, 155, 175, 9, 37, M({ color: 0x15181b }));               // door window
+box(60.9, 61.2, 155, 175, 39, 48, mat.charcoal);                         // control panel
+for (let k = 0; k < 4; k++) box(61.1, 61.3, 158 + k * 4, 160 + k * 4, 41, 46, mat.ledRGB);
+box(61.2, 62.4, 162, 168, 37.5, 38.5, mat.black);                        // door release
+box(60, 60.5, 179, 186, 6, 50, mat.dark);                                // vent grille above (no cupboard)
+for (let z = 8; z < 49; z += 3) box(60.5, 60.7, 180, 185, z, z + 1.2, mat.grey);
+box(60, 60.5, 2, 190, 53.6, 54.4, mat.dark);                              // pull-out pantry seam (kept)
 box(60.5, 61.8, 110, 130, 58.5, 60.5, mat.black);
 
 // ------------------------------------------------------------------ v19 SLIM OVERHEAD SHELF (1 level, 16 deep, board 178.2..180, 4 cm lip), full length
@@ -603,10 +625,10 @@ function shelfRun(x1, x2, zWall, dir) {        // dir: +1 = shelf extends toward
   }
   box(x1, x2, SHY - 0.4, SHY, dir > 0 ? zb - 2.5 : za + 1.5, dir > 0 ? zb - 1.5 : za + 2.5, mat.led, groups.shelves);   // LED strip
 }
-shelfRun(140, 432, 3, 1);           // passenger: rear edge of the sliding door -> rear doors (above window + tablet)
+shelfRun(60, 432, 3, 1);            // v20: passenger: fridge unit -> OVER the sliding door (header 160) -> rear doors
 shelfRun(BX2 + 2, 432, W - 3, -1);  // driver: bath rear wall -> rear doors
 // a few light things on the shelves
-const boxes = [[150, 166, 3, 0xd9a066], [262, 284, 3, 0xe6dccb], [345, 360, 3, 0xc9b79c], [130, 146, W - 17, 0xb0643a], [270, 284, W - 17, 0x8c949c], [400, 416, W - 17, 0xe6dccb]];
+const boxes = [[78, 96, 3, 0xc9b79c], [112, 126, 3, 0x8c949c], [150, 166, 3, 0xd9a066], [262, 284, 3, 0xe6dccb], [345, 360, 3, 0xc9b79c], [130, 146, W - 17, 0xb0643a], [270, 284, W - 17, 0x8c949c], [400, 416, W - 17, 0xe6dccb]];
 for (const [a, b, z, c] of boxes) box(a, b, SHY + 1.8, SHY + 11, z + 2, z + 13, M({ color: c }), groups.shelves);
 for (let i = 0; i < 6; i++) box(215 + i * 3, 217.6 + i * 3, SHY + 1.8, SHY + 13 + (i % 3) * 1.2, 5, 16, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
 
@@ -715,7 +737,7 @@ box(312, 360, 0, 45, 104, 105, M({ color: 0x0b7d5b }), X);           // sealed p
 // fresh / grey / black tanks under the floor (only visible from outside / below)
 box(140, 188, -30, -3, 6, 54, M({ color: 0x1c7ed6, transparent: true, opacity: 0.6 }));
 box(118, 170, -28, -3, 138, 174, M({ color: 0x868e96 }));
-box(59, 103, -30, -3, 130, 172, M({ color: 0x212529 }));
+box(15, 59, -30, -3, 130, 172, M({ color: 0x212529 }));
 // CO detector by the bed
 const co = new T.Mesh(new T.CylinderGeometry(5, 5, 2, 16), M({ color: 0xf8f0f0 }, true)); co.rotation.x = Math.PI / 2; co.position.set(338, 150, W - 1); root.add(co);
 
@@ -747,15 +769,19 @@ for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 
 
 // ------------------------------------------------------------------ LABELS
 const labelDefs = [
-  ['Walk-through wet bath 102×105 · 2 doors', [60, 165, 110]],
+  ['Angled walk-through bath · 2 doors', [45, 165, 110]],
   ['Sliding door → cab (52 cm)', [6, 150, 96]],
-  ['Aisle door (swings in)', [86, 150, 68]],
+  ['Diagonal bath door 55 cm', [88, 150, 90]],
+  ['Toilet behind the driver seat', [37, 70, 150]],
+  ['Shower corner', [86, 120, 150]],
   ['Straight galley 73 cm · sink · storage', [148, 104, 140]],
-  ['Slim shelf · 16 deep · 180 cm · full length', [225, 192, 165]],
+  ['Slim shelf · 16 deep · 180 cm', [225, 192, 165]],
+  ['Shelf over the sliding door', [100, 190, 10]],
   ['Slim shelf to the rear doors', [225, 192, 13], () => mode === 'walk'],
   ['Cab-over shelf 127×44', [-40, 190, 89]],
-  ['Tall fridge unit · Dometic NRX 80C', [62, 150, 30]],
-  ['Sliding door (130 cm)', [100, 160, 1]],
+  ['Microwave 0.7 cu ft (152–178 cm)', [62, 184, 28]],
+  ['Dometic NRX 80C fridge', [62, 120, 28]],
+  ['Sliding door (130 × 160 cm)', [100, 140, 1]],
   ['Desk extension + drawers', [166, 92, 30]],
   ['Main desk 94 cm · monitor on arm', [235, 140, 20]],
   ['PC bay (mATX/ITX)', [298, 70, 45]],
@@ -872,6 +898,8 @@ function preset(name) {
   if (name === 'chair') { setMonitor('A'); walk.pos.set(216, 0, 96); walk.eye = walk.targetEye = 118; lookAtYP(216, 118, 96, 216, 108, 12); }
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
+  if (name === 'entry') { setBathDoors(true); walk.pos.set(132, 0, 4); walk.eye = walk.targetEye = 160; lookAtYP(132, 160, 4, 62, 118, 112); }
+  if (name === 'hall') { setBathDoors(true); walk.pos.set(215, 0, 140); walk.eye = walk.targetEye = 162; lookAtYP(215, 162, 140, 60, 135, 50); }
   if (name === 'bath') { setBathDoors(true); walk.pos.set(97, 0, 84); walk.eye = walk.targetEye = 165; lookAtYP(97, 165, 84, 0, 182, 110); }
 }
 
@@ -880,14 +908,19 @@ const PR = 13;
 const walkable = [[-48, 424, 17, 161], [64 + PR, 136 - PR, -90, 20]];
 const obstacles = [
   // v18 bath shell (walls, toilet) — doors handled in blocked()
-  [8, 10, FD2, 178], [8, 11, FD1 - 2, FD1], [8, AD1, BZ1 - 2, BZ1], [AD2, 114, BZ1 - 2, BZ1], [BX2, 114, BZ1 - 2, 178],
+  [8, 10, FD2, 178], [8, 11, FD1 - 2, FD1], [8, DGA[0], BZ1 - 2, BZ1], [BX2, 114, DGB[1] - 1, 178],
   [TXC - 17.5, TXC + 17.5, 127, 178],
   [112, 186, 119, 178],                    // straight galley
   [3, 62, 0, 67],                          // tall fridge unit
   [140, 310, 0, 58], [248, 310, 120, 178], [310, 437, 0, 178],
   [-60, -8, 122, 172], [-60, -8, 6, 56], [-58, -18, 62, 116], [-110, -74, 0, 178],
 ];
-const doorObs = () => bathOpen ? [[107, 113, BZ1, 121], [10, 13, FD2, 174]] : [[AD1, AD2, BZ1 - 2, BZ1], [8, 12, FD1, FD2]];
+const doorObs = () => bathOpen ? [[DD2[0] - 2, DD2[0] + 2, DD2[1], DD2[1] + DLEN], [10, 13, FD2, 174]] : [[8, 12, FD1, FD2]];
+const segs = () => [[DGA, DD1], [DD2, DGB]].concat(bathOpen ? [] : [[DD1, DD2]]);
+function segDist(x, z, a, b) {
+  const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
+  return Math.hypot(x - a[0] - t * dx, z - a[1] - t * dz);
+}
 const circles = [[216, 89, 30]];
 function blocked(x, z) {
   if (!walkable.some(r => x >= r[0] && x <= r[1] && z >= r[2] && z <= r[3])) return true;
@@ -896,6 +929,7 @@ function blocked(x, z) {
     if ((x - cx) ** 2 + (z - cz) ** 2 < PR * PR) return true;
   }
   for (const c of circles) if ((x - c[0]) ** 2 + (z - c[1]) ** 2 < (c[2] + PR) ** 2) return true;
+  for (const [a, b] of segs()) if (segDist(x, z, a, b) < PR) return true;
   return false;
 }
 function moveWalk(dx, dz) {
