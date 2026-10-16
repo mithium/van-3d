@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v25 · 3D walk-through</title>
+<title>Martin's van v26 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v25 · 3D</span>
+    <span id="title">Van v26 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v25 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v26 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -190,16 +190,14 @@ function solarTex() {
 }
 function screenTex() {   // monitor: a cozy game scene + HUD
   const t = ctex(512, 288, (g, w, h) => {
-    const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, '#2b1f5c'); sky.addColorStop(0.5, '#e0628a'); sky.addColorStop(0.75, '#ffb36b');
-    g.fillStyle = sky; g.fillRect(0, 0, w, h);
-    g.fillStyle = '#fff2c0'; g.beginPath(); g.arc(360, 170, 36, 0, 7); g.fill();
-    g.fillStyle = '#3d2a5e'; g.beginPath(); g.moveTo(0, 210);
-    for (let x = 0; x <= w; x += 16) g.lineTo(x, 180 - Math.abs(Math.sin(x / 60)) * 70 - rnd() * 10);
-    g.lineTo(w, h); g.lineTo(0, h); g.fill();
-    g.fillStyle = '#1d1533'; g.beginPath(); g.moveTo(0, 240);
-    for (let x = 0; x <= w; x += 12) g.lineTo(x, 225 - Math.abs(Math.sin(x / 33 + 2)) * 40);
-    g.lineTo(w, h); g.lineTo(0, h); g.fill();
+    // v26: indoor neon-arena game scene (no sky/landscape, so the monitor can't read as a window)
+    g.fillStyle = '#0d1018'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#161b2b'; g.fillRect(0, 0, w, 150);
+    g.strokeStyle = 'rgba(0,229,255,0.55)'; g.lineWidth = 1.5;
+    for (let i = -10; i <= 10; i++) { g.beginPath(); g.moveTo(256 + i * 20, 150); g.lineTo(256 + i * 90, h); g.stroke(); }
+    for (let k = 0; k < 7; k++) { const y = 150 + Math.pow(k / 6, 1.8) * (h - 150); g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    g.fillStyle = '#ff2e88'; g.fillRect(150, 92, 34, 58); g.fillRect(330, 104, 26, 46);
+    g.fillStyle = '#ffd43b'; g.beginPath(); g.moveTo(256, 98); g.lineTo(274, 132); g.lineTo(238, 132); g.fill();
     g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(12, 12, 140, 26);
     g.fillStyle = '#7CFC9A'; g.fillRect(16, 16, 100, 8); g.fillStyle = '#5bc0ff'; g.fillRect(16, 27, 70, 7);
     g.fillStyle = '#fff'; g.font = 'bold 16px sans-serif'; g.fillText('HP 100   ⚡ 87', 360, 30);
@@ -675,13 +673,14 @@ pad.rotation.x = -Math.PI / 2; pad.position.set(110, GROUND + 0.2, 89); root.add
 // Dometic 310 (38.1 W x 48.3 D x 50.8 H, seat 45.7) back on the driver wall, centred x 59 -> 30.95 cm clear each side.
 // Shower = standing zone right in front of the bowl: z 63..124.7 (61.7 deep) x 10..84+ (>= 74 across), ceiling rain head over it.
 // Straight face z 63 (x 10..84) against the narrowed fridge tower, then a DIAGONAL wall (84,63) -> (108,128) = the galley corner.
-// Door 1 (v25): 60 cm on the diagonal (which now starts flush at the fridge face), hinged at the galley end, opens OUT onto the sink cabinets.
+// Door 1 (v26): 60 cm on the diagonal, hinged right at the fridge-tower corner, opens OUT toward the fridge (132 deg); 19 cm stub at the galley end.
 // Door 2 (cab): 50 cm hinged door in the front wall (z 65..115), swings into the bath and parks flat on the straight face.
 const BX1 = 10, BX2 = 108, BZ1 = 63, BZ2 = 175, BTOP = 196.5, FD1 = 65, FD2 = 115, DH = 190;
 const DGA = [60, 63], DGB = [108, 128];   // v25: diagonal starts FLUSH at the fridge-tower face (x 60) -> no nook
 const dg = t => [DGA[0] + t * (DGB[0] - DGA[0]), DGA[1] + t * (DGB[1] - DGA[1])];
 const DGL = Math.hypot(DGB[0] - DGA[0], DGB[1] - DGA[1]);   // 80.8
-const DD1 = dg(1 - 63 / DGL), DD2 = dg(1 - 3 / DGL), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
+// v26: HINGE at DD1 = the fridge-tower corner; 60 clear; ~19 cm stub at the galley end
+const DD1 = dg(1.5 / DGL), DD2 = dg(61.5 / DGL), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
 const bathPoly = [[BX1, BZ1], DGA, DGB, [BX2, BZ2], [BX1, BZ2]];
 wallFit(FD2, W, 0, 199, BX1 - 2, BX1, mat.bathWall);                    // front wall behind the driver seat (follows the real wall/roof)
 wallFit(FD1, FD2, DH, 199, BX1 - 2, BX1, mat.bathWall);                 // header over the cab door
@@ -695,9 +694,11 @@ for (const P of [DD1, DD2]) box(P[0] - 1.2, P[0] + 1.2, 0, DH, P[1] - 1.2, P[1] 
 planExtrude(sh => { sh.moveTo(bathPoly[0][0], -bathPoly[0][1]); for (const q of bathPoly.slice(1)) sh.lineTo(q[0], -q[1]); sh.lineTo(bathPoly[0][0], -bathPoly[0][1]); }, 0.3, 3, mat.shower);   // shower pan (whole floor)
 sweep(subProf(PROF_F, 3, 196).map(([h, y]) => [ZC + h - 0.6, y]).reverse(), BX1, BX2, mat.bathWall);   // wet-wall lining (also blanks the factory glass inside the bath)
 cyl(49, 3, 3.3, 92, 3, mat.steel);                                      // drain in the middle of the standing zone
-// v25 diagonal door, hinged at DD2 (GALLEY end), swings OUT ~125 deg and parks flat on the sink-cabinet front
-const doorA = new T.Group(); doorA.position.set(DD2[0], 0, DD2[1]); root.add(doorA);
-const DOOR_A0 = Math.atan2(-(DD1[1] - DD2[1]), DD1[0] - DD2[0]);       // closed: leaf points from the hinge toward DD1
+// v26 diagonal door, hinged at DD1 (FRIDGE corner), swings OUT 132 deg toward the fridge and rests ~11 deg off the fridge face
+// (stops 1 cm clear of the microwave latch / fridge handle). Never sweeps toward the galley.
+const doorA = new T.Group(); doorA.position.set(DD1[0], 0, DD1[1]); root.add(doorA);
+const DOOR_A0 = Math.atan2(-(DD2[1] - DD1[1]), DD2[0] - DD1[0]);       // closed: leaf points from the hinge toward DD2
+const DOOR_OPEN = DOOR_A0 + 132 * Math.PI / 180;
 box(0, DLEN, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
 box(DLEN - 8, DLEN - 4, 92, 95, -3.5, 3.5, mat.steel, doorA);
 const doorF = new T.Group(); doorF.position.set(BX1, 0, FD1); root.add(doorF);
@@ -706,7 +707,7 @@ box(-4, 2, 92, 106, FD2 - FD1 - 7, FD2 - FD1 - 5, mat.steel, doorF);
 let bathOpen = true;
 function setBathDoors(open) {
   bathOpen = open;
-  doorA.rotation.y = open ? 0 : DOOR_A0;                                  // open: leaf along +x, against the galley cabinets
+  doorA.rotation.y = open ? DOOR_OPEN : DOOR_A0;                          // open: out into the hall, resting against the fridge front
   doorF.rotation.y = open ? Math.PI / 2 : 0;                               // flat on the straight face
   const b = document.getElementById('tBath'); if (b) { b.textContent = 'Bath doors: ' + (open ? 'open' : 'closed'); b.classList.toggle('on', open); }
 }
@@ -957,7 +958,7 @@ for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 
 const labelDefs = [
   ['Compact wet bath 98 × 110 (≈0.92 m²) · 2 doors', [60, 165, 110]],
   ['Cab door 50 cm · hinged, opens into the bath', [6, 150, 96]],
-  ['Diagonal bath door 60 cm · opens out', [88, 150, 100]],
+  ['Bath door 60 cm · hinged at the fridge corner, opens out against the fridge', [80, 150, 92]],
   ['Dometic 310 · 31 / 29 cm clear', [59, 70, 150]],
   ['Rain head · shower zone 62 deep in front of the WC', [49, 180, 80]],
   ['Galley 138 cm · window over the counter', [180, 104, 150]],
@@ -1058,6 +1059,7 @@ interiorLights.forEach(p => p.userData.i0 = p.intensity);
 let modeName = 'walk';
 function setMode(m) {
   modeName = m;
+  setSlider(m !== 'walk');   // v26: slider CLOSED in every outside/orbit view (the slid-back door glass looked like a window behind the desk)
   if (m === 'walk') { mode = 'walk'; camera.fov = walkFov(); }
   else {
     mode = 'orbit'; camera.fov = 50;
@@ -1085,7 +1087,6 @@ function lookAtYP(px, py, pz, tx, ty, tz) {
   walk.yaw = Math.atan2(-dx, -dz); walk.pitch = Math.atan2(dy, Math.hypot(dx, dz));
 }
 function preset(name) {
-  setSlider(name === 'exterior' || name === 'exteriorD');
   if (name === 'dollhouse') { roofOn = false; setMode('dollhouse'); return; }
   if (name === 'exteriorD') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(110, 75, 89); orbit.theta = 0.62; orbit.phi = 1.3; orbit.r = 780; return; }
   if (name === 'exterior') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(110, 75, 89); orbit.theta = -2.15; orbit.phi = 1.28; orbit.r = 760; return; }
@@ -1096,6 +1097,8 @@ function preset(name) {
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'shelves') { setBathDoors(true); walk.pos.set(304, 0, 89); walk.eye = walk.targetEye = 165; lookAtYP(304, 165, 89, 110, 148, 89); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
+  if (name === 'desk') { setBathDoors(true); walk.pos.set(200, 0, 118); walk.eye = walk.targetEye = 150; lookAtYP(200, 150, 118, 262, 110, 0); }
+  if (name === 'bathdoor') { setBathDoors(true); walk.pos.set(205, 0, 80); walk.eye = walk.targetEye = 165; lookAtYP(205, 165, 80, 62, 100, 50); }
   if (name === 'entry') { setBathDoors(true); walk.pos.set(205, 0, 72); walk.eye = walk.targetEye = 165; lookAtYP(205, 165, 72, 60, 105, 78); }
   if (name === 'front') { setBathDoors(true); walk.pos.set(172, 0, 96); walk.eye = walk.targetEye = 162; lookAtYP(172, 162, 96, 30, 128, 70); }
   if (name === 'couch') { setBathDoors(true); walk.pos.set(118, 0, 72); walk.eye = walk.targetEye = 165; lookAtYP(118, 165, 72, 240, 75, 172); }
@@ -1118,7 +1121,7 @@ const obstacles = [
   [-60, -8, 122, 172], [-60, -8, 6, 56], [-58, -18, 62, 116], [-130, -76, 0, 178],
 ];
 const doorObs = () => bathOpen ? [[BX1, BX1 + 50, FD1, FD1 + 2.5]] : [[BX1 - 2, BX1, FD1, FD2]];
-const leafA = () => [DD2, [DD2[0] + DLEN, DD2[1]]];
+const leafA = () => [DD1, [DD1[0] + DLEN * Math.cos(DOOR_OPEN), DD1[1] - DLEN * Math.sin(DOOR_OPEN)]];
 const segs = () => [[DGA, DD1], [DD2, DGB]].concat(bathOpen ? [leafA()] : [[DD1, DD2]]);
 function segDist(x, z, a, b) {
   const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
