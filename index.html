@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v24 · 3D walk-through</title>
+<title>Martin's van v25 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v24 · 3D</span>
+    <span id="title">Van v25 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -57,7 +57,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v24 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v25 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -410,7 +410,7 @@ function segWall(a, b, y1, y2, t, m, parent) {   // slab from plan point a=[x,z]
 // ------------------------------------------------------------------ constants (cm; x = 0 at the back of the front seats, z = 0 passenger side, y = 0 cargo floor)
 const L = 437, W = 178, WALLT = 3, ZC = 89, CEIL = 198.6, GROUND = -71.1;
 const SD1 = 8, SD2 = 138, DOORH = 160;            // sliding door opening: Ford 51.2" x 63.0" = 130 x 160
-// v23 desk window = CRL FW286R passenger MIDDLE panel (fixed, 38-1/4" = 972 wide x ~722 tall [height est.]), in the Ford stamping behind the C-pillar
+// window block (WX/WY reused for the driver middle panel CRL FW286L; v25: passenger FW286R desk window removed)
 const WX1 = 152, WX2 = 249.2, WY1 = 59.5, WY2 = 131.7;
 
 // ------------------------------------------------------------------ v22 TRUE FORD TRANSIT 148" EL HIGH-ROOF SHELL
@@ -504,7 +504,8 @@ const arch = xc => { const o = []; for (let k = 0; k < 9; k++) { const a = xc - 
 // v24: the big driver glass (FW293L) is GONE. Driver MIDDLE panel = CRL FW286L (mirror of FW286R, 97.2 x ~72.2 est.) in the Ford
 //      middle stamping x 152..249.2 (can't slide forward: the C-pillar/stamping fixes it) -> over the rear 96 cm of the 138 cm counter.
 //      Glass runs y 59.5..131.7 outside; inside, the part below the counter top (92) is blanked by the cabinet back (black panel).
-const WIN = { P: [[WX1, WX2, WY1, WY2]], D: [[WX1, WX2, WY1, WY2], [383, 413, 114, 134]] };
+// v25: passenger desk window (FW286R) REMOVED -> solid passenger wall; the slider glass is the only passenger-side glass
+const WIN = { P: [], D: [[WX1, WX2, WY1, WY2], [383, 413, 114, 134]] };
 const WIN_IN = { P: WIN.P, D: [[WX1, WX2, 92, WY2], [383, 413, 114, 134]] };   // interior openings (driver middle clipped to the counter top)
 const SDG = [4.25, 141.75, 59, 132.3];   // slider glass (Ford fixed/vented slider glass = FW293R size 137.5 x 73.3) on the CLOSED door
 
@@ -674,12 +675,13 @@ pad.rotation.x = -Math.PI / 2; pad.position.set(110, GROUND + 0.2, 89); root.add
 // Dometic 310 (38.1 W x 48.3 D x 50.8 H, seat 45.7) back on the driver wall, centred x 59 -> 30.95 cm clear each side.
 // Shower = standing zone right in front of the bowl: z 63..124.7 (61.7 deep) x 10..84+ (>= 74 across), ceiling rain head over it.
 // Straight face z 63 (x 10..84) against the narrowed fridge tower, then a DIAGONAL wall (84,63) -> (108,128) = the galley corner.
-// Door 1: 60 cm on the diagonal, hinged at the fridge end, swings IN 90 deg (parks over the shower floor, clear of the WC).
+// Door 1 (v25): 60 cm on the diagonal (which now starts flush at the fridge face), hinged at the galley end, opens OUT onto the sink cabinets.
 // Door 2 (cab): 50 cm hinged door in the front wall (z 65..115), swings into the bath and parks flat on the straight face.
 const BX1 = 10, BX2 = 108, BZ1 = 63, BZ2 = 175, BTOP = 196.5, FD1 = 65, FD2 = 115, DH = 190;
-const DGA = [84, 63], DGB = [108, 128];
+const DGA = [60, 63], DGB = [108, 128];   // v25: diagonal starts FLUSH at the fridge-tower face (x 60) -> no nook
 const dg = t => [DGA[0] + t * (DGB[0] - DGA[0]), DGA[1] + t * (DGB[1] - DGA[1])];
-const DD1 = dg(0.065), DD2 = dg(0.93), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
+const DGL = Math.hypot(DGB[0] - DGA[0], DGB[1] - DGA[1]);   // 80.8
+const DD1 = dg(1 - 63 / DGL), DD2 = dg(1 - 3 / DGL), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
 const bathPoly = [[BX1, BZ1], DGA, DGB, [BX2, BZ2], [BX1, BZ2]];
 wallFit(FD2, W, 0, 199, BX1 - 2, BX1, mat.bathWall);                    // front wall behind the driver seat (follows the real wall/roof)
 wallFit(FD1, FD2, DH, 199, BX1 - 2, BX1, mat.bathWall);                 // header over the cab door
@@ -693,9 +695,9 @@ for (const P of [DD1, DD2]) box(P[0] - 1.2, P[0] + 1.2, 0, DH, P[1] - 1.2, P[1] 
 planExtrude(sh => { sh.moveTo(bathPoly[0][0], -bathPoly[0][1]); for (const q of bathPoly.slice(1)) sh.lineTo(q[0], -q[1]); sh.lineTo(bathPoly[0][0], -bathPoly[0][1]); }, 0.3, 3, mat.shower);   // shower pan (whole floor)
 sweep(subProf(PROF_F, 3, 196).map(([h, y]) => [ZC + h - 0.6, y]).reverse(), BX1, BX2, mat.bathWall);   // wet-wall lining (also blanks the factory glass inside the bath)
 cyl(49, 3, 3.3, 92, 3, mat.steel);                                      // drain in the middle of the standing zone
-// diagonal door, hinged at DD1 (fridge end)
-const doorA = new T.Group(); doorA.position.set(DD1[0], 0, DD1[1]); root.add(doorA);
-const DOOR_A0 = Math.atan2(-(DD2[1] - DD1[1]), DD2[0] - DD1[0]);       // closed: leaf points from the hinge toward DD2
+// v25 diagonal door, hinged at DD2 (GALLEY end), swings OUT ~125 deg and parks flat on the sink-cabinet front
+const doorA = new T.Group(); doorA.position.set(DD2[0], 0, DD2[1]); root.add(doorA);
+const DOOR_A0 = Math.atan2(-(DD1[1] - DD2[1]), DD1[0] - DD2[0]);       // closed: leaf points from the hinge toward DD1
 box(0, DLEN, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
 box(DLEN - 8, DLEN - 4, 92, 95, -3.5, 3.5, mat.steel, doorA);
 const doorF = new T.Group(); doorF.position.set(BX1, 0, FD1); root.add(doorF);
@@ -704,7 +706,7 @@ box(-4, 2, 92, 106, FD2 - FD1 - 7, FD2 - FD1 - 5, mat.steel, doorF);
 let bathOpen = true;
 function setBathDoors(open) {
   bathOpen = open;
-  doorA.rotation.y = DOOR_A0 - (open ? Math.PI / 2 : 0);                 // swung in 90 deg (toward the front wall)
+  doorA.rotation.y = open ? 0 : DOOR_A0;                                  // open: leaf along +x, against the galley cabinets
   doorF.rotation.y = open ? Math.PI / 2 : 0;                               // flat on the straight face
   const b = document.getElementById('tBath'); if (b) { b.textContent = 'Bath doors: ' + (open ? 'open' : 'closed'); b.classList.toggle('on', open); }
 }
@@ -841,7 +843,7 @@ box(PBX1 + 3, DX2 - 3, 46, 70, 57, 57.3, M({ color: 0x1b2028 }));
 rbox(196, 236, 77.5, 79.5, 37, 47, 0.8, mat.dark);
 rbox(238, 245, 77.5, 80, 38, 47, 1.5, mat.dark);
 cyl(170, 77.5, 87, 25, 4, M({ color: 0xe9e2d0 }));
-// 10" security tablet on the wall above the PC bay, below the window
+// 10" security tablet on the (solid) wall above the PC bay
 box(285.6, 310.4, 82, 99, 2.9, 4.1, mat.dark);
 const tab = new T.Mesh(new T.PlaneGeometry(23.2, 15.4), mat.tablet); tab.position.set(298, 90.5, 4.15); root.add(tab);
 
@@ -953,10 +955,10 @@ for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 
 
 // ------------------------------------------------------------------ LABELS
 const labelDefs = [
-  ['Compact wet bath 98 × 110 (≈1.0 m²) · 2 doors', [60, 165, 110]],
+  ['Compact wet bath 98 × 110 (≈0.92 m²) · 2 doors', [60, 165, 110]],
   ['Cab door 50 cm · hinged, opens into the bath', [6, 150, 96]],
-  ['Diagonal bath door 60 cm', [97, 150, 95]],
-  ['Dometic 310 · centred · 31 cm clear each side', [59, 70, 150]],
+  ['Diagonal bath door 60 cm · opens out', [88, 150, 100]],
+  ['Dometic 310 · 31 / 29 cm clear', [59, 70, 150]],
   ['Rain head · shower zone 62 deep in front of the WC', [49, 180, 80]],
   ['Galley 138 cm · window over the counter', [180, 104, 150]],
   ['v24 window: CRL FW286L middle panel 97×72 · over the counter (sill = counter 92)', [200, 128, W - 6]],
@@ -964,7 +966,7 @@ const labelDefs = [
   ['Bed porthole ~30×20 (driver side)', [398, 140, W - 6]],
   ['Factory slider glass 138×73 · fridge tower behind the front 56 cm', [72, 145, -14], () => mode !== 'walk'],
   ['Rear-door glass 80×83 (fixed, privacy)', [L + 6, 160, 89], () => mode !== 'walk'],
-  ['Desk window: CRL FW286R middle panel 97×72', [200, 140, -12], () => mode !== 'walk'],
+  ['Solid wall behind the desk (no window)', [200, 140, -12], () => mode !== 'walk'],
   ['Slim shelf lowered to 160 · ~28 cm clear above', [225, 182, 150]],
   ['Shelf over the sliding door · stepped up to 172', [118, 183, 26]],
   ['Over the bed: shelves kept at 180 (sit-up room)', [380, 192, 28], () => mode === 'walk'],
@@ -1094,7 +1096,7 @@ function preset(name) {
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'shelves') { setBathDoors(true); walk.pos.set(304, 0, 89); walk.eye = walk.targetEye = 165; lookAtYP(304, 165, 89, 110, 148, 89); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
-  if (name === 'entry') { setBathDoors(true); walk.pos.set(132, 0, 4); walk.eye = walk.targetEye = 160; lookAtYP(132, 160, 4, 62, 118, 112); }
+  if (name === 'entry') { setBathDoors(true); walk.pos.set(205, 0, 72); walk.eye = walk.targetEye = 165; lookAtYP(205, 165, 72, 60, 105, 78); }
   if (name === 'front') { setBathDoors(true); walk.pos.set(172, 0, 96); walk.eye = walk.targetEye = 162; lookAtYP(172, 162, 96, 30, 128, 70); }
   if (name === 'couch') { setBathDoors(true); walk.pos.set(118, 0, 72); walk.eye = walk.targetEye = 165; lookAtYP(118, 165, 72, 240, 75, 172); }
   if (name === 'hall') { setBathDoors(true); walk.pos.set(300, 0, 98); walk.eye = walk.targetEye = 162; lookAtYP(300, 162, 98, 60, 135, 50); }
@@ -1116,7 +1118,7 @@ const obstacles = [
   [-60, -8, 122, 172], [-60, -8, 6, 56], [-58, -18, 62, 116], [-130, -76, 0, 178],
 ];
 const doorObs = () => bathOpen ? [[BX1, BX1 + 50, FD1, FD1 + 2.5]] : [[BX1 - 2, BX1, FD1, FD2]];
-const leafA = () => { const a = DOOR_A0 - Math.PI / 2; return [DD1, [DD1[0] + DLEN * Math.cos(a), DD1[1] - DLEN * Math.sin(a)]]; };
+const leafA = () => [DD2, [DD2[0] + DLEN, DD2[1]]];
 const segs = () => [[DGA, DD1], [DD2, DGB]].concat(bathOpen ? [leafA()] : [[DD1, DD2]]);
 function segDist(x, z, a, b) {
   const dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz)));
