@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v28 · 3D walk-through</title>
+<title>Martin's van v29 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v28 · 3D</span>
+    <span id="title">Van v29 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -58,7 +58,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v28 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v29 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -947,20 +947,27 @@ for (let x = 376; x < 430; x += 5) box(x, x + 2.5, 215, 227, 45, 46.2, mat.dark,
 // v28: real MaxxFan Deluxe outer footprint 58.5 x 41.7 cm (closed 12.7 tall, lid open 23.7), lengthwise, HINGE FORWARD
 const FO1 = 59 - 29.25, FO2 = 59 + 29.25, FOZ1 = FZC - 20.85, FOZ2 = FZC + 20.85;
 box(FO1 - 2, FO2 + 2, roofY(FOZ2 + 2) - 0.5, roofY(FZC) + 3, FOZ1 - 2, FOZ2 + 2, M({ color: 0x495057 }), R);   // contour adapter (levels the fan)
-rbox(FO1, FO2, roofY(FZC) + 3, roofY(FZC) + 15.7, FOZ1, FOZ2, 4, M({ color: 0x2f3338 }), R);                    // MaxxFan Deluxe (closed)
+// v29: fan body + LID partly open (hinge forward, open end facing rear); lid limited by the raised panel above
+rbox(FO1, FO2, roofY(FZC) + 3, roofY(FZC) + 13.7, FOZ1, FOZ2, 4, M({ color: 0x2f3338 }), R);                    // MaxxFan Deluxe body
+const LID_DEG = 4.8;                                                                                            // ≈ half of full travel (10.7°)
+{ const lid = new T.Mesh(new T.BoxGeometry(58.5, 2, 41.7), M({ color: 0x3a3f45 }));
+  const a = LID_DEG * Math.PI / 180; lid.rotation.z = a;
+  lid.position.set(FO1 + 29.25 * Math.cos(a), roofY(FZC) + 14.7 + 29.25 * Math.sin(a), FZC); R.add(lid); }
 for (const z of [ZC - 70, ZC + 70]) {
   box(98, 340, 211, 214, z - 2, z + 2, mat.alu, R);                                                       // rack rails
   for (const x of [104, 160, 217, 274, 331]) box(x - 2, x + 2, roofY(z) - 0.5, 211, z - 2, z + 2, mat.alu, R);   // feet on the roof
 }
-// v28: 2 x Renogy 16BB N-type 100 W (RSP100DC, 865 x 578 x 30 mm) crosswise on the flat roof IN FRONT of the fan, in series
-for (const x of [-27, 13]) {
-  box(x - 2, x + 2, 211, 214, 1, 177, mat.alu, R);                                                           // crosswise rails
-  for (const z of [ZC - 70, ZC - 20, ZC + 20, ZC + 70]) box(x - 2, x + 2, roofY(z) - 0.5, 211, z - 2, z + 2, mat.alu, R);   // feet
+// v29: RAISED rack over the fan: 3rd Canadian Solar CS6.1-54TM-450H (1800 x 1134 x 35) crosswise, x -36 .. 77.4,
+// panel underside 22 cm above the roof crown, in series with the two 450s on the existing SmartSolar 150/45
+const RB = roofY(ZC) + 22;          // panel underside
+for (const x of [-31, 72]) {
+  box(x - 2.5, x + 2.5, RB - 4, RB, 1, 177, mat.alu, R);                                                     // crosswise bars
+  for (const z of (x < 0 ? [ZC - 70, ZC - 35, ZC + 35, ZC + 70] : [ZC - 70, ZC - 35, ZC + 70]))
+    box(x - 2, x + 2, roofY(z) - 0.5, RB - 4, z - 2, z + 2, mat.alu, R);                                     // tall legs
 }
-for (const z0 of [1.75, 89.75]) {
-  box(-35.8, 22, 214, 217, z0, z0 + 86.5, mat.alu, R);
-  const sp = new T.Mesh(new T.PlaneGeometry(55.8, 84.5), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set(-6.9, 217.1, z0 + 43.25); R.add(sp);
-}
+box(-38, -36, RB - 6, RB + 1, 1, 177, M({ color: 0x343a40 }), R);                                            // wind fairing lip
+box(-36, 77.4, RB, RB + 3.5, -1, 179, mat.alu, R);
+{ const sp = new T.Mesh(new T.PlaneGeometry(111.4, 178), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set(-36 + 56.7, RB + 3.6, 89); R.add(sp); }
 for (const x of [104.0, 219.4]) {
   box(x, x + 113.4, 214, 217, -1, 179, mat.alu, R);
   const sp = new T.Mesh(new T.PlaneGeometry(111.4, 178), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set(x + 56.7, 217.1, 89); R.add(sp);
@@ -1008,8 +1015,8 @@ const labelDefs = [
   ['Cat litter bay (sealed)', [333, 50, 83], () => xray],
   ['MaxxAir over the toilet (centred on it, adapter)', [59, 200, 119], () => !(mode !== 'walk' && !roofOn)],
   ['Dometic RTX 2000 AC (over bed)', [410, 193, 84], () => !(mode !== 'walk' && !roofOn)],
-  ['Solar 2 × 450 W', [218, 228, 89], () => mode !== 'walk' && roofOn],
-  ['+ 2 × 100 W Renogy (series, own MPPT)', [-7, 226, 89], () => mode !== 'walk' && roofOn],
+  ['Solar 2 × 450 W (normal rack)', [218, 228, 89], () => mode !== 'walk' && roofOn],
+  ['v29: 3rd 450 W on a raised rack over the fan (22 cm up)', [20, 246, 89], () => mode !== 'walk' && roofOn],
   ['Rear wheel well (true axle)', [252, 30, 10], () => mode !== 'walk'],
   ['Driver seat (fixed)', [-34, 150, 147]],
   ['Passenger seat (swivel)', [-34, 150, 31]],
@@ -1119,6 +1126,8 @@ function preset(name) {
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'shelves') { setBathDoors(true); walk.pos.set(304, 0, 89); walk.eye = walk.targetEye = 165; lookAtYP(304, 165, 89, 110, 148, 89); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
+  if (name === 'sideroof') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(70, 215, 89); orbit.theta = Math.PI; orbit.phi = 1.57; orbit.r = 330; return; }
+  if (name === 'side') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(170, 150, 89); orbit.theta = Math.PI; orbit.phi = 1.56; orbit.r = 820; return; }
   if (name === 'roof') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(120, 200, 89); orbit.theta = -2.6; orbit.phi = 0.55; orbit.r = 640; return; }
   if (name === 'desk') { setBathDoors(true); walk.pos.set(200, 0, 118); walk.eye = walk.targetEye = 150; lookAtYP(200, 150, 118, 262, 110, 0); }
   if (name === 'bathdoor') { setBathDoors(true); walk.pos.set(205, 0, 80); walk.eye = walk.targetEye = 165; lookAtYP(205, 165, 80, 62, 100, 50); }
