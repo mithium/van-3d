@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v26 · 3D walk-through</title>
+<title>Martin's van v27 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v26 · 3D</span>
+    <span id="title">Van v27 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -44,7 +44,8 @@
 <div id="joy"><div id="knob"></div></div>
 <div id="err"></div>
 <script>
-window.addEventListener('error',function(e){var d=document.getElementById('err');d.style.display='flex';d.textContent='Sorry, the 3D view failed to start: '+(e.message||e);});
+window.addEventListener('error',function(e){if(window.__vanReady){console.warn('van3d runtime error (ignored, scene is running):',e.message||e);if(e.preventDefault)e.preventDefault();return;}var d=document.getElementById('err');d.style.display='flex';d.textContent='Sorry, the 3D view failed to start: '+(e.message||e);});
+window.addEventListener('unhandledrejection',function(e){console.warn('van3d unhandled promise rejection (ignored):',e.reason);});
 </script>
 <script>
 void 0,
@@ -57,7 +58,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v26 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v27 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -563,9 +564,17 @@ for (const side of [-1, 1]) for (const [x1, x2, y1, y2] of (side < 0 ? WIN_IN.P 
 sweep(roofPts(PROF_E, 165), p => capX(p[1]), L + 3, mat.paint, groups.roof);
 {
   const rows = [];
-  for (let y = 134; y <= 209.61; y += (y < 195 ? 6 : 2.4)) {
-    const yy = Math.min(y, 209.6), h = halfAt(PROF_E, yy), r = [];
+  // v27: sample the cap at the union of its own steps AND every shell-profile vertex, so its side edge meets the side/roof
+  // sweeps exactly (v26 left a thin sliver gap along the cap corner that showed the interior wood from outside)
+  const capYs = []; for (let y = 134; y <= 209.61; y += (y < 195 ? 6 : 2.4)) capYs.push(Math.min(y, 209.6));
+  for (const [, py] of PROF_E) if (py > 134 && py < 209.6) capYs.push(py);
+  for (const [cy] of CAPT) if (cy > 134) capYs.push(cy);
+  capYs.push(165); capYs.sort((a, b) => a - b);
+  for (const yy of capYs.filter((v, i, arr) => i === 0 || v - arr[i - 1] > 0.05)) {
+    const h = halfAt(PROF_E, yy), r = [];
+    r.push([capX(yy) + 2.5, yy, ZC - h - 0.25]);                             // v27: 2.5 cm wrap-around flange over the side seam
     for (let j = 0; j <= 16; j++) r.push([capX(yy), yy, ZC - h + 2 * h * j / 16]);
+    r.push([capX(yy) + 2.5, yy, ZC + h + 0.25]);
     rows.push(r);
   }
   loftRows(rows, mat.paint, groups.roof);
@@ -673,14 +682,14 @@ pad.rotation.x = -Math.PI / 2; pad.position.set(110, GROUND + 0.2, 89); root.add
 // Dometic 310 (38.1 W x 48.3 D x 50.8 H, seat 45.7) back on the driver wall, centred x 59 -> 30.95 cm clear each side.
 // Shower = standing zone right in front of the bowl: z 63..124.7 (61.7 deep) x 10..84+ (>= 74 across), ceiling rain head over it.
 // Straight face z 63 (x 10..84) against the narrowed fridge tower, then a DIAGONAL wall (84,63) -> (108,128) = the galley corner.
-// Door 1 (v26): 60 cm on the diagonal, hinged right at the fridge-tower corner, opens OUT toward the fridge (132 deg); 19 cm stub at the galley end.
+// Door 1 (v27): 60 cm on the diagonal, hinged 3 cm from the fridge-tower corner, opens OUT toward the fridge side, max 85 deg; 18 cm stub at the galley end.
 // Door 2 (cab): 50 cm hinged door in the front wall (z 65..115), swings into the bath and parks flat on the straight face.
 const BX1 = 10, BX2 = 108, BZ1 = 63, BZ2 = 175, BTOP = 196.5, FD1 = 65, FD2 = 115, DH = 190;
 const DGA = [60, 63], DGB = [108, 128];   // v25: diagonal starts FLUSH at the fridge-tower face (x 60) -> no nook
 const dg = t => [DGA[0] + t * (DGB[0] - DGA[0]), DGA[1] + t * (DGB[1] - DGA[1])];
 const DGL = Math.hypot(DGB[0] - DGA[0], DGB[1] - DGA[1]);   // 80.8
-// v26: HINGE at DD1 = the fridge-tower corner; 60 clear; ~19 cm stub at the galley end
-const DD1 = dg(1.5 / DGL), DD2 = dg(61.5 / DGL), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
+// v27: HINGE at DD1, 3 cm in from the fridge-tower corner (clears the fridge carcass); 60 clear; ~18 cm stub at the galley end
+const DD1 = dg(3 / DGL), DD2 = dg(63 / DGL), DLEN = Math.hypot(DD2[0] - DD1[0], DD2[1] - DD1[1]);
 const bathPoly = [[BX1, BZ1], DGA, DGB, [BX2, BZ2], [BX1, BZ2]];
 wallFit(FD2, W, 0, 199, BX1 - 2, BX1, mat.bathWall);                    // front wall behind the driver seat (follows the real wall/roof)
 wallFit(FD1, FD2, DH, 199, BX1 - 2, BX1, mat.bathWall);                 // header over the cab door
@@ -694,11 +703,12 @@ for (const P of [DD1, DD2]) box(P[0] - 1.2, P[0] + 1.2, 0, DH, P[1] - 1.2, P[1] 
 planExtrude(sh => { sh.moveTo(bathPoly[0][0], -bathPoly[0][1]); for (const q of bathPoly.slice(1)) sh.lineTo(q[0], -q[1]); sh.lineTo(bathPoly[0][0], -bathPoly[0][1]); }, 0.3, 3, mat.shower);   // shower pan (whole floor)
 sweep(subProf(PROF_F, 3, 196).map(([h, y]) => [ZC + h - 0.6, y]).reverse(), BX1, BX2, mat.bathWall);   // wet-wall lining (also blanks the factory glass inside the bath)
 cyl(49, 3, 3.3, 92, 3, mat.steel);                                      // drain in the middle of the standing zone
-// v26 diagonal door, hinged at DD1 (FRIDGE corner), swings OUT 132 deg toward the fridge and rests ~11 deg off the fridge face
-// (stops 1 cm clear of the microwave latch / fridge handle). Never sweeps toward the galley.
+// v27 diagonal door, hinged at DD1 (fridge corner), swings OUT toward the fridge side, MAX 85 deg (door stop).
+// v26's 132 deg pushed the top of the 189 cm leaf through the curved upper wall (wall is at z 27.5 at 189 cm) and through the
+// stepped shelf over the slider (front edge z 31) -> beyond ~86 deg the leaf top leaves the shell. Checked every angle 0..85.
 const doorA = new T.Group(); doorA.position.set(DD1[0], 0, DD1[1]); root.add(doorA);
 const DOOR_A0 = Math.atan2(-(DD2[1] - DD1[1]), DD2[0] - DD1[0]);       // closed: leaf points from the hinge toward DD2
-const DOOR_OPEN = DOOR_A0 + 132 * Math.PI / 180;
+const DOOR_MAX_DEG = 85, DOOR_OPEN = DOOR_A0 + DOOR_MAX_DEG * Math.PI / 180;
 box(0, DLEN, 1, DH - 1, -1.2, 1.2, mat.bathDoor, doorA);
 box(DLEN - 8, DLEN - 4, 92, 95, -3.5, 3.5, mat.steel, doorA);
 const doorF = new T.Group(); doorF.position.set(BX1, 0, FD1); root.add(doorF);
@@ -707,7 +717,7 @@ box(-4, 2, 92, 106, FD2 - FD1 - 7, FD2 - FD1 - 5, mat.steel, doorF);
 let bathOpen = true;
 function setBathDoors(open) {
   bathOpen = open;
-  doorA.rotation.y = open ? DOOR_OPEN : DOOR_A0;                          // open: out into the hall, resting against the fridge front
+  doorA.rotation.y = open ? DOOR_OPEN : DOOR_A0;                          // open: out into the hall, 85 deg (stop) - stays inside the shell
   doorF.rotation.y = open ? Math.PI / 2 : 0;                               // flat on the straight face
   const b = document.getElementById('tBath'); if (b) { b.textContent = 'Bath doors: ' + (open ? 'open' : 'closed'); b.classList.toggle('on', open); }
 }
@@ -958,7 +968,7 @@ for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 
 const labelDefs = [
   ['Compact wet bath 98 × 110 (≈0.92 m²) · 2 doors', [60, 165, 110]],
   ['Cab door 50 cm · hinged, opens into the bath', [6, 150, 96]],
-  ['Bath door 60 cm · hinged at the fridge corner, opens out against the fridge', [80, 150, 92]],
+  ['Bath door 60 cm · hinged at the fridge corner, opens out 85° (door stop)', [80, 150, 92]],
   ['Dometic 310 · 31 / 29 cm clear', [59, 70, 150]],
   ['Rain head · shower zone 62 deep in front of the WC', [49, 180, 80]],
   ['Galley 138 cm · window over the counter', [180, 104, 150]],
@@ -1164,15 +1174,28 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { keys[e.code] = false; });
 // pointer: look (walk) / orbit
 const pointers = new Map(); let pinchD = 0, pinchMid = null;
+// v27: pointer capture is best-effort. Chrome Android (e.g. Galaxy Fold) can throw InvalidStateError when the pointer is no longer
+// active (multi-touch, fold/unfold, synthetic events) -> guard every call so it can never take the app down.
+function safeCapture(el, e) {
+  try {
+    if (!el || !el.setPointerCapture || !e || e.type !== 'pointerdown' || typeof e.pointerId !== 'number' || e.pointerId < 0) return;
+    if (e.pointerType !== 'mouse' && e.isPrimary === false && el === canvas) return;   // extra touch fingers: no capture needed
+    if (el.hasPointerCapture && el.hasPointerCapture(e.pointerId)) return;
+    el.setPointerCapture(e.pointerId);
+  } catch (_) { /* pointer not active any more: ignore */ }
+}
+function safeRelease(el, e) {
+  try { if (el && el.releasePointerCapture && e && el.hasPointerCapture && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId); } catch (_) {}
+}
 canvas.addEventListener('pointerdown', e => {
-  canvas.setPointerCapture && canvas.setPointerCapture(e.pointerId);
+  safeCapture(canvas, e);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, button: e.button });
   if (mode === 'walk' && e.pointerType === 'mouse' && !document.pointerLockElement && canvas.requestPointerLock) {
     try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (_) {}
   }
   if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchD = Math.hypot(a.x - b.x, a.y - b.y); pinchMid = [(a.x + b.x) / 2, (a.y + b.y) / 2]; }
 });
-function endPointer(e) { pointers.delete(e.pointerId); pinchD = 0; }
+function endPointer(e) { safeRelease(canvas, e); pointers.delete(e.pointerId); pinchD = 0; }
 canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer);
 canvas.addEventListener('pointermove', e => {
   const p = pointers.get(e.pointerId);
@@ -1220,9 +1243,9 @@ function pan(dx, dy) {
 // joystick
 const joyEl = document.getElementById('joy'), knob = document.getElementById('knob');
 let joyId = null;
-joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); e.stopPropagation(); });
+joyEl.addEventListener('pointerdown', e => { joyId = e.pointerId; safeCapture(joyEl, e); joyMove(e); e.stopPropagation(); });
 joyEl.addEventListener('pointermove', e => { if (e.pointerId === joyId) joyMove(e); });
-const joyEnd = e => { if (e.pointerId === joyId) { joyId = null; joy.x = joy.y = 0; knob.style.transform = 'translate(-50%,-50%)'; } };
+const joyEnd = e => { safeRelease(joyEl, e); if (e.pointerId === joyId) { joyId = null; joy.x = joy.y = 0; knob.style.transform = 'translate(-50%,-50%)'; } };
 joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
 function joyMove(e) {
   const r = joyEl.getBoundingClientRect(), R_ = r.width / 2;
