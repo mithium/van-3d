@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Martin's van v29 · 3D walk-through</title>
+<title>Martin's van v30 · 3D walk-through</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -28,7 +28,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v29 · 3D</span>
+    <span id="title">Van v30 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -58,7 +58,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 <script>
-/* Van v29 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
+/* Van v30 3D walk-through. Units: cm. world x = plan x (0 = back of cab seats, + toward rear doors),
    world z = plan y (0 = passenger wall, 178 = driver wall), y = up (0 = cargo floor). */
 (function () {
 'use strict';
@@ -237,8 +237,14 @@ function M(opts, clip) {
 const mat = {
   felt: M({ map: feltTex('#5a544e', 40), side: T.DoubleSide }, true),
   ceiling: M({ map: feltTex('#8d857b', 40), side: T.DoubleSide }),
-  paint: M({ color: 0xf3f4f5, side: T.DoubleSide }, true),
-  paintNoClip: M({ color: 0xf3f4f5 }),
+  paint: new T.MeshPhongMaterial({ color: 0xf1f2ef, shininess: 70, specular: 0x3c3c3c, side: T.DoubleSide }),   // v30 Oxford White, glossy
+  paintNoClip: new T.MeshPhongMaterial({ color: 0xf1f2ef, shininess: 70, specular: 0x3c3c3c }),
+  trim: new T.MeshPhongMaterial({ color: 0x26282b, shininess: 14, specular: 0x202020, side: T.DoubleSide }),   // textured black plastic
+  bumper: new T.MeshPhongMaterial({ color: 0x484b50, shininess: 10, specular: 0x1c1c1c, side: T.DoubleSide }),
+  mirrorGl: new T.MeshPhongMaterial({ color: 0xa9b8c6, shininess: 140, specular: 0xffffff }),
+  amber: new T.MeshPhongMaterial({ color: 0xf08c1a, emissive: 0x3a1c00, shininess: 90 }),
+  lens: new T.MeshPhongMaterial({ color: 0xe9eef2, emissive: 0x222222, shininess: 120, specular: 0xffffff }),
+  tailRed: new T.MeshPhongMaterial({ color: 0xb3121b, emissive: 0x2a0000, shininess: 110, specular: 0x886666 }),
   carpet: M({ map: carpetTex() }),
   vinyl: M({ map: vinylTex() }),
   rubber: M({ color: 0x2b2d30 }),
@@ -289,7 +295,7 @@ const mat = {
   plant: M({ color: 0x4f7d45 }),
   pot: M({ color: 0xb86b48 }),
 };
-clipMats.push(mat.glass, mat.tint);
+clipMats.push(mat.glass, mat.tint, mat.paint);
 mat.glass.userData.clip = mat.tint.userData.clip = true;
 
 // ------------------------------------------------------------------ geometry helpers
@@ -492,8 +498,74 @@ function capX(y) {
   for (let i = 1; i < CAPT.length; i++) { const [y1, x1] = CAPT[i - 1], [y2, x2] = CAPT[i]; if (y <= y2) return x1 + (x2 - x1) * (y - y1) / (y2 - y1); }
   return CAPT[CAPT.length - 1][1];
 }
-const wsX = y => -125 + (y - 60) * 53 / 74;
+const wsX = y => -132 + (y - 66) * 60 / 68;          // v30: cowl (-132, 66) -> header (-72, 134)
 const aX = y => y < 60 ? -125 : (y <= 134 ? wsX(y) + 4 : capX(y));     // front edge of the side above the belt
+// ---- v30 TRUE 2020+ TRANSIT NOSE: centre-line profile (side photo / Ford drawings) + plan-view sweep-back of the corners
+const SE = (a, n) => 1 - Math.pow(Math.max(0, 1 - Math.pow(Math.min(1, a), n)), 1 / n);   // superellipse corner sweep 0..1
+const FACE_X = y => -219 + 4 * (y + 8) / 47;                  // nose face centre (grille/headlights), y -8..39 (hood edge ~110 cm up), leans back slightly
+const FACE_K = y => -191 - FACE_X(y);                         // corners swept back so the face meets the fenders at x -191
+const hoodC = t => [-215 + 83 * t, 39 + 27 * t + 3 * Math.sin(Math.PI * t)];   // long sloped hood: front edge (-215, 39) -> cowl (-132, 66)
+const HOOD_K = t => FACE_K(39) * Math.pow(Math.max(0, 1 - t), 1.3) + 2.5 * t;
+const hwN = y => halfAt(PROF_E, y) - 0.2;
+const faceP = (s, y) => [FACE_X(y) + FACE_K(y) * SE(Math.abs(s), 2.3), y, ZC + s * hwN(y)];
+const hoodP = (s, t) => { const [x, y] = hoodC(t); return [x + HOOD_K(t) * SE(Math.abs(s), 2.3), y, ZC + s * hwN(y)]; };
+function hoodSideX(y) {
+  if (y <= 39) return -191; y = Math.min(y, 66);
+  let a = 0, b = 1; for (let i = 0; i < 30; i++) { const m = (a + b) / 2; if (hoodC(m)[1] < y) a = m; else b = m; }
+  const t = (a + b) / 2; return hoodC(t)[0] + HOOD_K(t);
+}
+// parametric surface patch with uv 0..1 and an optional offset along the surface normal (decals, trim, lights)
+function patch(F, a0, a1, b0, b1, nu, nv, m, off, parent, flipU) {
+  const pos = [], uv = [], idx = [], e = 1e-3;
+  for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
+    const a = a0 + (a1 - a0) * i / nu, b = b0 + (b1 - b0) * j / nv;
+    let p = F(a, b);
+    if (off) {
+      const ac = Math.max(-1 + 3 * e, Math.min(1 - 3 * e, a));
+      const pa1 = F(ac + e, b), pa0 = F(ac - e, b), pb1 = F(a, b + e), pb0 = F(a, b - e);
+      const da = [0, 1, 2].map(k => pa1[k] - pa0[k]), db = [0, 1, 2].map(k => pb1[k] - pb0[k]);
+      let n = [da[1] * db[2] - da[2] * db[1], da[2] * db[0] - da[0] * db[2], da[0] * db[1] - da[1] * db[0]];
+      const l = Math.hypot(...n) || 1; n = n.map(v => v / l);
+      if (n[0] * (p[0] - 100) + n[2] * (p[2] - ZC) < 0) n = n.map(v => -v);
+      p = [p[0] + n[0] * off, p[1] + n[1] * off, p[2] + n[2] * off];
+    }
+    pos.push(...p); uv.push(flipU ? 1 - i / nu : i / nu, j / nv);
+  }
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const a = j * (nu + 1) + i, b = a + 1, c = a + nu + 1, d = c + 1; idx.push(a, b, d, a, d, c); }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals();
+  const mesh = new T.Mesh(g, m); (parent || root).add(mesh); return mesh;
+}
+function canvasMat(w, h, draw, extra) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 4;
+  return new T.MeshPhongMaterial(Object.assign({ map: t, alphaTest: 0.5, side: T.DoubleSide, shininess: 60, specular: 0x333333 }, extra || {}));
+}
+// 2020+ grille: big rounded trapezoid, black hex mesh, dark frame, blue Ford oval
+const grilleMat = canvasMat(512, 256, (g, w, h) => {
+  const path = () => { g.beginPath(); const r = 30; const P = [[10, 10], [502, 10], [482, 246], [30, 246]];
+    g.moveTo(P[0][0] + r, P[0][1]); for (let i = 0; i < 4; i++) { const a = P[(i + 1) % 4], b = P[(i + 2) % 4]; g.arcTo(a[0], a[1], b[0], b[1], r); } g.closePath(); };
+  g.clearRect(0, 0, w, h); g.save(); path(); g.clip(); g.fillStyle = '#0c0d0f'; g.fillRect(0, 0, w, h);
+  g.strokeStyle = '#3c4046'; g.lineWidth = 3.2; const R = 13;
+  for (let row = 0; row < 14; row++) for (let col = 0; col < 24; col++) {
+    const cx = col * R * 1.75 + (row % 2) * R * 0.875, cy = row * R * 1.5 + 6; g.beginPath();
+    for (let k = 0; k < 6; k++) { const a = Math.PI / 6 + k * Math.PI / 3; g[k ? 'lineTo' : 'moveTo'](cx + R * Math.cos(a), cy + R * Math.sin(a)); } g.closePath(); g.stroke(); }
+  g.restore(); path(); g.lineWidth = 14; g.strokeStyle = '#2a2c30'; g.stroke();
+  g.save(); g.translate(256, 70); g.beginPath(); g.ellipse(0, 0, 50, 22, 0, 0, 2 * Math.PI);
+  const gr = g.createLinearGradient(0, -22, 0, 22); gr.addColorStop(0, '#2f5fb8'); gr.addColorStop(1, '#0f2c6b'); g.fillStyle = gr; g.fill();
+  g.lineWidth = 4; g.strokeStyle = '#e3e7eb'; g.stroke(); g.fillStyle = '#f4f6f8'; g.font = 'italic bold 27px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('Ford', 0, 1); g.restore();
+});
+// swept-back headlight (inner end beside the grille's top corner, tapering up/back along the fender), amber turn strip at the bottom
+const headMat = canvasMat(256, 128, (g, w, h) => {
+  g.clearRect(0, 0, w, h);
+  const P = [[6, 118], [6, 8], [40, 4], [252, 2], [252, 40], [206, 72], [110, 106]];
+  g.beginPath(); P.forEach((q, i) => g[i ? 'lineTo' : 'moveTo'](...q)); g.closePath();
+  const gr = g.createLinearGradient(0, 0, 0, 110); gr.addColorStop(0, '#e9eef3'); gr.addColorStop(0.5, '#8b949d'); gr.addColorStop(1, '#3a3f45'); g.fillStyle = gr; g.fill();
+  g.lineWidth = 5; g.strokeStyle = '#141517'; g.stroke();
+  g.fillStyle = '#f08c1a'; g.beginPath(); g.moveTo(110, 106); g.lineTo(206, 72); g.lineTo(240, 50); g.lineTo(130, 84); g.closePath(); g.fill();
+  for (const [cx, cy, r] of [[48, 56, 30], [108, 46, 22]]) { const rg = g.createRadialGradient(cx - 6, cy - 6, 2, cx, cy, r); rg.addColorStop(0, '#ffffff'); rg.addColorStop(0.6, '#b9c2ca'); rg.addColorStop(1, '#2d3136'); g.fillStyle = rg; g.beginPath(); g.arc(cx, cy, r, 0, 2 * Math.PI); g.fill(); }
+  g.strokeStyle = '#ffffff'; g.lineWidth = 4; g.beginPath(); g.moveTo(14, 12); g.lineTo(240, 6); g.stroke();
+}, { shininess: 120, specular: 0xffffff });
 const FW = -123.5, RW = 251.4, WR = 35.5, WY = GROUND + WR;           // axles: 147.6" WB; 235/65R16C tyres (71 cm)
 const arch = xc => { const o = []; for (let k = 0; k < 9; k++) { const a = xc - 45 + k * 10, dx = a + 5 - xc; o.push([a, a + 10, -40, WY + Math.sqrt(Math.max(0, 43 * 43 - dx * dx))]); } return o; };
 // v23 FACTORY-STYLE GLASS (28 % dark privacy tint). Side glass sits in the Ford stampings, bottom ~59 cm above the cargo floor (belt line, est.)
@@ -514,8 +586,9 @@ for (const side of [-1, 1]) {
   const wins = side < 0 ? WIN.P : WIN.D;
   const doorHole = side < 0 ? [[SD1, SD2, 0, DOORH]] : [];
   sideBands(PROF_E, side, -14, L + 3, -38, 165, wins.concat(doorHole, arch(RW)), mat.paint);         // cargo body + B-pillar
-  sideBands(PROF_E, side, -197, -14, -38, 42, arch(FW), mat.paint);                                 // front doors / fenders, lower
-  sweep(onSide(subProf(PROF_E, 42, 60), side), p => -197 + (p[1] - 42) / 20 * 72, -14, mat.paint);  // up to the belt, following the hood line
+  sideBands(PROF_E, side, -191, -14, -38, 39, arch(FW), mat.paint);                                 // v30 front doors / fenders, lower
+  sweep(onSide(subProf(PROF_E, 39, 60), side), p => hoodSideX(p[1]), -14, mat.paint);               // v30 up to the belt, following the hood's side edge
+  sweep(onSide(subProf(PROF_E, 54, 75), side, 0.4), p => (p[1] <= 66 ? hoodSideX(p[1]) : aX(p[1]) - 1) - 0.3, -117, mat.trim);   // black mirror sail
   sweep(onSide(subProf(PROF_E, 60, 124), side, -0.5), p => aX(p[1]), -14, cabGlass);                // front door glass
   sweep(onSide(subProf(PROF_E, 124, 165), side), p => aX(p[1]), -14, mat.paint);                   // above the door glass
   sideBands(PROF_E, side, -14, -3, 60, 124, [], mat.dark, root, 0.3);                               // black B-pillar trim
@@ -527,8 +600,9 @@ for (const side of [-1, 1]) {
   // door handle + mirror (247 cm over the mirrors = 97.4")
   sideBands(PROF_E, side, -40, -28, 50, 53, [], mat.dark, root, 0.8);
   const zm = side < 0 ? [-34.7, -18] : [W + 18, W + 34.7];
-  rbox(-100, -86, 55, 98, zm[0], zm[1], 3, mat.dark);
-  rod([-93, 70, side < 0 ? -18 : W + 18], [-93, 66, sideZ(side, 100.5)], 1.6, mat.dark);
+  rbox(-101, -87, 53, 99, zm[0], zm[1], 4, mat.trim);                                               // v30 tall two-piece housing
+  box(-86.9, -86.5, 56, 72, zm[0] + 1.6, zm[1] - 1.6, mat.mirrorGl); box(-86.9, -86.5, 73.5, 96, zm[0] + 1.6, zm[1] - 1.6, mat.mirrorGl);
+  for (const yy of [60, 88]) rod([-96, yy, side < 0 ? -18 : W + 18], [-112, yy - 2, sideZ(side, 100.6)], 1.8, mat.trim);   // arms to the sail
   box(-100.6, -99.8, 62, 66, side < 0 ? zm[0] + 3 : zm[1] - 7, side < 0 ? zm[0] + 7 : zm[1] - 3, M({ color: 0x1864ab }));   // mirror cams
 }
 // sliding door with the factory slider glass. OPEN = slid back outside the body (walk views); CLOSED = flush (exterior views, shows the
@@ -578,31 +652,72 @@ sweep(roofPts(PROF_E, 165), p => capX(p[1]), L + 3, mat.paint, groups.roof);
     rows.push(r);
   }
   loftRows(rows, mat.paint, groups.roof);
-  // windshield (slightly curved) + its frame band up to the cap
-  const ws = [];
-  for (const y of [60, 97, 134]) { const h = halfAt(PROF_E, y) - 0.5, r = []; for (let j = 0; j <= 16; j++) { const s = j / 8 - 1; r.push([wsX(y) + 4 * s * s, y, ZC + h * s]); } ws.push(r); }
-  loftRows(ws, cabGlass);
-  for (const s of [-1, 1]) rod([wsX(60) + 4, 60, ZC + s * (halfAt(PROF_E, 60) - 0.5)], [wsX(134) + 4, 134, ZC + s * (halfAt(PROF_E, 134) - 0.5)], 3, mat.dark);   // A-pillars
+  // v30 windshield: big, raked, wrapped; black frit band + thick black A-pillars; wipers parked on the cowl
+  const wsP = (u, y) => [wsX(y) + 4 * u * u, y, ZC + u * (halfAt(PROF_E, y) - 0.5)];
+  patch(wsP, -1, 1, 66, 134, 16, 4, cabGlass);
+  patch(wsP, -1, 1, 66, 71, 16, 1, mat.black, 0.25); patch(wsP, -1, 1, 127, 134, 16, 1, mat.black, 0.25);
+  for (const sg of [-1, 1]) { patch(wsP, sg < 0 ? -1 : 0.94, sg < 0 ? -0.94 : 1, 66, 134, 2, 4, mat.black, 0.25);
+    rod([wsX(66) + 4, 66, ZC + sg * (halfAt(PROF_E, 66) - 1.5)], [wsX(134) + 4, 134, ZC + sg * (halfAt(PROF_E, 134) - 1.5)], 4.2, mat.trim); }
+  for (const [z1, z2] of [[ZC - 84, ZC - 8], [ZC - 2, ZC + 70]]) rod(wsP((z1 - ZC) / 99, 68.5).map((v, k) => k ? v : v - 1.5), wsP((z2 - ZC) / 99, 70).map((v, k) => k ? v : v - 1.5), 0.9, mat.black);
   box(wsX(134) + 2, wsX(134) + 8, 132, 136, ZC - halfAt(PROF_E, 134), ZC + halfAt(PROF_E, 134), mat.paint);   // header
-  // hood (cowl -125 @ 60 -> front -205 @ 42), front face, bumper, grille, lights
-  const hood = [];
-  for (let k = 0; k <= 6; k++) { const t = k / 6, xr = -205 + 80 * t, y = 42 + 18 * t + 2.5 * Math.sin(Math.PI * t), h = halfAt(PROF_E, y), r = [];
-    for (let j = 0; j <= 16; j++) { const s = j / 8 - 1; r.push([xr + 8 * (1 - t) * s ** 4, y, ZC + h * s]); } hood.push(r); }
-  loftRows(hood, mat.paint);
-  const face = [];
-  for (const y of [42, 15, -12]) { const h = halfAt(PROF_E, y), r = []; for (let j = 0; j <= 16; j++) { const s = j / 8 - 1; r.push([-205 + 8 * s ** 4, y, ZC + h * s]); } face.push(r); }
-  loftRows(face, mat.paint);
+  // v30 high-roof cap: raised front lip (eyebrow) over the windshield + 3 amber ID lamps + 2 corner markers
+  const lipP = (u, v) => { const y = 133 + 10 * v; return [capX(y) - 4 * Math.sin(Math.PI * v), y, ZC + u * (halfAt(PROF_E, y) - 0.3)]; };
+  patch(lipP, -1, 1, 0, 1, 24, 6, mat.paint);
+  for (const dz of [-15, 0, 15]) rbox(capX(138) - 7.2, capX(138) - 4.6, 136.5, 139.5, ZC + dz - 3.5, ZC + dz + 3.5, 1, mat.amber, groups.roof);
+  for (const sg of [-1, 1]) rbox(capX(150) - 1.2, capX(150) + 3, 148, 152, ZC + sg * 84 - 3, ZC + sg * 84 + 3, 1, mat.amber, groups.roof);
+  // v30 nose: long sloped hood + rounded face (sheet metal), grille, swept headlights, hood vents, cowl
+  patch(faceP, -1, 1, -8, 39, 36, 9, mat.paint);
+  patch(hoodP, -1, 1, 0, 1, 36, 12, mat.paint);
+  patch(hoodP, -1, 1, 0.965, 1, 24, 1, mat.trim, 0.2);                                                  // cowl strip
+  patch(faceP, -0.42, 0.42, -16, 37.8, 20, 10, grilleMat, 0.6);
+  patch(faceP, 0.41, 1, 12, 38.8, 18, 6, headMat, 0.5); patch(faceP, -1, -0.41, 12, 38.8, 18, 6, headMat, 0.5, root, true);
+  for (const [u0, u1] of [[0.17, 0.5], [-0.5, -0.17]]) patch(hoodP, u0, u1, 0.62, 0.7, 6, 1, mat.trim, 0.3);   // the two hood vents
 }
-rbox(-226, -195, -50, -12, ZC - 98, ZC + 98, 4, mat.dark);                  // front bumper (overall length 670 cm)
-box(-207, -204.5, 0, 36, ZC - 62, ZC + 62, mat.dark);                       // grille
-for (const s of [-1, 1]) box(-206, -198, 20, 40, ZC + s * 64 - 15, ZC + s * 64 + 15, mat.alu);   // headlights
-box(-207.5, -206.5, 20, 25, 82, 96, M({ color: 0x1864ab }));               // grille cam
+// v30 front bumper: one big wrap-around textured-grey moulding (overall length 670 cm), plate recess, lower intakes, fog pockets
+{
+  const XB = y => -222.5 - 3.5 * Math.sin(Math.PI * (y + 45) / 45), HB = 102;
+  const KB = y => -193 - XB(y);
+  const bx = (s, y) => XB(y) + KB(y) * SE(Math.abs(s), 2.3);
+  const rows = [];
+  for (const [y, ins] of [[-47.5, 7], [-45, 0], [-38, 0], [-30, 0], [-21, 0], [-11, 0], [-2, 0], [1, 6]]) {
+    const r = [];
+    for (let k = 3; k >= 1; k--) r.push([-193 + 7 * k, y, ZC - HB + ins * 0.4]);
+    for (let j = 0; j <= 40; j++) { const sv = j / 20 - 1, dip = Math.max(0, 1 - Math.pow(Math.abs(sv) / 0.43, 6)), ye = y > -21 ? -21 + (y + 21) * (1 - 0.72 * dip) : y;
+      r.push([bx(sv, ye) + ins, ye, ZC + sv * (HB - ins * 0.4)]); }   // top dips in the middle under the tall grille
+    for (let k = 1; k <= 3; k++) r.push([-193 + 7 * k, y, ZC + HB - ins * 0.4]);
+    rows.push(r);
+  }
+  loftRows(rows, mat.bumper);
+  box(bx(0, -26) - 0.9, bx(0, -26) + 0.5, -34, -19, ZC - 16, ZC + 16, mat.black);                      // plate recess
+  for (const sg of [-1, 1]) {
+    for (const [s0, s1] of [[0.24, 0.56]]) { const sm = (s0 + s1) / 2; box(bx(sm, -39) - 0.8, bx(sm, -39) + 1, -42, -35, ZC + sg * s1 * HB, ZC + sg * s0 * HB, mat.black); }
+    const zc = ZC + sg * 0.76 * HB, xf = bx(0.76, -24);
+    rbox(xf - 0.8, xf + 3, -29, -19, zc - 10, zc + 10, 2.5, mat.black);                                  // fog pocket
+    box(xf - 1.1, xf, -27, -21, zc - 7, zc + 7, mat.lens);
+    box(-186, -179, -8, -4.5, ZC + sg * (HB + 0.3) - 0.3, ZC + sg * (HB + 0.3) + 0.3, mat.amber);        // side marker
+  }
+}
+box(FACE_X(22) - 1.6, FACE_X(22) - 0.6, 20, 25, 82, 96, M({ color: 0x1864ab }));               // grille cam
 // rear face (doors 157 x 189: 61.7" x 74.3"), tail lights, bumper step, 3rd brake light + cam
 crossShape(fullPts(PROF_E, -38), L + 3, mat.paint);
 for (const z of [ZC, ZC - 78.35, ZC + 78.35]) box(L + 3, L + 3.6, 0, 188.7, z - 0.4, z + 0.4, mat.darkClip);
 box(L + 3, L + 3.6, 188.3, 189.1, ZC - 78.35, ZC + 78.35, mat.darkClip);
-for (const s of [-1, 1]) box(L + 3, L + 5, 30, 110, s < 0 ? ZC - 100 : ZC + 89, s < 0 ? ZC - 89 : ZC + 100, mat.red);
-box(L + 3, L + 7, -48, -22, ZC - 97, ZC + 97, mat.dark);
+// v30 tall narrow vertical tail lamps in the D-pillars (wrap onto the sides), split doors' hinges + handle, big rear bumper with step pad
+for (const sg of [-1, 1]) {
+  const za = sg < 0 ? ZC - 100.6 : ZC + 80.2, zb = sg < 0 ? ZC - 80.2 : ZC + 100.6;
+  box(L + 3, L + 4.6, 14, 106, za - (sg < 0 ? 0.4 : 0.6), zb + (sg < 0 ? 0.6 : 0.4), mat.black);
+  for (const [y1, y2, m] of [[66, 104, mat.tailRed], [54, 65, mat.amber], [42, 53, mat.lens], [16, 41, mat.tailRed]]) {
+    box(L + 4.6, L + 6, y1, y2, za + 0.8, zb - 0.8, m);
+    sideBands(PROF_E, sg, L - 5, L + 3, y1, y2, [], m, root, 0.35);
+  }
+  for (const yy of [22, 154]) box(L + 3, L + 6.5, yy, yy + 10, sg < 0 ? ZC - 80 : ZC + 76.5, sg < 0 ? ZC - 76.5 : ZC + 80, mat.trim);   // door hinges
+}
+box(L + 3.6, L + 5.2, 92, 96, ZC + 3, ZC + 17, mat.trim);                                        // door handle
+rbox(L + 3.4, L + 5, 128, 136, ZC + 38, ZC + 58, 1.5, M({ color: 0x1b3f8f }));                     // Ford oval
+rbox(L - 6, L + 10, -50, -21, ZC - 101.5, ZC + 101.5, 4, mat.bumper);
+box(L + 8, L + 12, -23, -21.2, ZC - 46, ZC + 46, mat.black);                                    // step pad
+for (let k = -4; k <= 4; k++) box(L + 8.5, L + 11.5, -21.2, -20.6, ZC + k * 10 - 3, ZC + k * 10 + 3, mat.trim);
+for (const sg of [-1, 1]) rbox(L - 34, L - 2, -49, -24, sg < 0 ? ZC - 102 : ZC + 96, sg < 0 ? ZC - 96 : ZC + 102, 3, mat.bumper);   // corner wraps
 // v23 rear-door glass: Ford factory fixed privacy glass / VWD TL215-F & TR215-F size 795 W x 829 H (overall incl. black frit), y 68..151 (est.)
 const RDG = [68, 151];
 for (const s of [-1, 1]) {
@@ -614,13 +729,37 @@ for (const s of [-1, 1]) {
 box(L + 3, L + 5, 196, 201, 80, 98, mat.red, groups.roof);
 // underbody, wheels + arch liners
 box(-197, L + 3, -40, -38.2, ZC - 95, ZC + 95, mat.dark);
+const tyreGeo = new T.LatheGeometry([[20.3, -10.5], [26, -11.8], [31.5, -11.4], [34.6, -9.6], [35.5, -6.5], [35.5, 6.5], [34.6, 9.6], [31.5, 11.4], [26, 11.8], [20.3, 10.5]].map(([r, y]) => new T.Vector2(r, y)), 40);
+const steelW = new T.MeshPhongMaterial({ color: 0xc9ced3, shininess: 90, specular: 0x888888 });
+const flareGeo = (() => { const sh = new T.Shape(); const a0 = -0.16, a1 = Math.PI + 0.16;
+  sh.absarc(0, 0, 51, a0, a1, false); sh.absarc(0, 0, 43.5, a1, a0, true); sh.closePath();
+  return new T.ExtrudeGeometry(sh, { depth: 2.8, bevelEnabled: true, bevelThickness: 0.8, bevelSize: 0.8, bevelSegments: 2, curveSegments: 24 }); })();
 for (const [x, tr] of [[FW, 86.6], [RW, 87.1]]) for (const s of [-1, 1]) {
   const z = ZC + s * tr;
-  const wh = new T.Mesh(new T.CylinderGeometry(WR, WR, 23, 28), mat.tire); wh.rotation.x = Math.PI / 2; wh.position.set(x, WY, z); root.add(wh);
-  const hub = new T.Mesh(new T.CylinderGeometry(19, 19, 23.6, 16), mat.alu); hub.rotation.x = Math.PI / 2; hub.position.set(x, WY, z); root.add(hub);
+  const wh = new T.Mesh(tyreGeo, mat.tire); wh.rotation.x = Math.PI / 2; wh.position.set(x, WY, z); root.add(wh);
+  const hub = new T.Mesh(new T.CylinderGeometry(20.3, 20.3, 21, 32), steelW); hub.rotation.x = Math.PI / 2; hub.position.set(x, WY, z); root.add(hub);
+  const fz = z + s * 10.6;
+  const dish = new T.Mesh(new T.CylinderGeometry(16.5, 16.5, 0.6, 32), M({ color: 0x8d949b })); dish.rotation.x = Math.PI / 2; dish.position.set(x, WY, fz - s * 1.2); root.add(dish);
+  const cap = new T.Mesh(new T.CylinderGeometry(7.5, 8.5, 2.4, 24), steelW); cap.rotation.x = Math.PI / 2; cap.position.set(x, WY, fz + s * 0.2); root.add(cap);
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3 + 0.5; const ho = new T.Mesh(new T.CylinderGeometry(2.6, 2.6, 0.8, 12), mat.black); ho.rotation.x = Math.PI / 2; ho.position.set(x + 12.5 * Math.cos(a), WY + 12.5 * Math.sin(a), fz - s * 0.9); root.add(ho); }
+  const fl = new T.Mesh(flareGeo, mat.trim); fl.position.set(x, WY, s < 0 ? ZC - 101.1 - 2.6 : ZC + 101.1 - 1.0); root.add(fl);   // black arch flare
   const liner = new T.Mesh(new T.CylinderGeometry(43, 43, 26, 20, 1, true, Math.PI / 2, Math.PI), M({ color: 0x1b1d20, side: T.DoubleSide }));
   liner.rotation.x = Math.PI / 2; liner.position.set(x, WY, z); root.add(liner);
 }
+// v30 lower-body protection cladding, front-door cut lines, body character line, roof ribs
+for (const side of [-1, 1]) {
+  sideBands(PROF_E, side, -78, L - 6, -34, -12, arch(RW), mat.bumper, root, 0.45);
+  sideBands(PROF_E, side, -191, -14, 38.2, 40.6, [], mat.paint, root, 0.5);                           // shoulder crease (catches the light)
+  const sz = y => sideZ(side, halfAt(PROF_E, y) + 0.25);
+  const seam = [];
+  for (let y = 138; y >= 66; y -= 12) seam.push([aX(y) + 1.5, y]);
+  seam.push([-130, 62], [-126, 40]);
+  for (let a = 66; a >= 0; a -= 11) seam.push([FW + 52.5 * Math.cos(a * Math.PI / 180), WY + 52.5 * Math.sin(a * Math.PI / 180)]);
+  seam.push([-71, -36], [-14, -36], [-14, 138], [aX(138) + 1.5, 138]);
+  for (let i = 1; i < seam.length; i++) rod([seam[i - 1][0], seam[i - 1][1], sz(seam[i - 1][1])], [seam[i][0], seam[i][1], sz(seam[i][1])], 0.32, mat.black);
+  box(-34, -20, 49, 53, side < 0 ? ZC - 102.2 : ZC + 101, side < 0 ? ZC - 101 : ZC + 102.2, mat.trim);   // front door handle
+}
+for (const dz of [-40, -14, 14, 40]) box(-30, L - 6, roofY(ZC + dz) - 0.4, roofY(ZC + dz) + 0.9, ZC + dz - 3, ZC + dz + 3, mat.paint, groups.roof);   // roof ribs
 // ---- interior trim (felt walls follow the real wall; ceiling follows the real roof)
 for (const side of [-1, 1]) {
   sideBands(PROF_F, side, 0, L, 0, 165, side < 0 ? WIN.P.concat([[SD1, SD2, 0, DOORH]]) : WIN_IN.D, mat.felt);
@@ -977,6 +1116,7 @@ for (const x of [104.0, 219.4]) {
 scene.add(new T.HemisphereLight(0xfff1dc, 0x5e5044, 1.1));
 scene.add(new T.AmbientLight(0xfff0e0, 0.35));
 const sun = new T.DirectionalLight(0xffffff, 1.6); sun.position.set(-300, 900, -500); scene.add(sun);
+const fill = new T.DirectionalLight(0xfff6ea, 0.55); fill.position.set(-500, 350, 900); scene.add(fill);   // v30 soft fill on the driver side
 const interiorLights = [];
 for (const [x, y, z, i] of [[60, 185, 70, 1.6], [170, 185, 90, 1.6], [270, 185, 90, 1.6], [395, 170, 90, 1.3], [130, 130, 150, 0.8]]) {
   const p = new T.PointLight(0xffc98a, i * 0.9, 300, 0); p.position.set(x, y, z); groups.lights.add(p); interiorLights.push(p);
@@ -1126,6 +1266,8 @@ function preset(name) {
   if (name === 'bed') { setMonitor('B'); walk.pos.set(405, 0, 38); walk.eye = walk.targetEye = 142; lookAtYP(405, 142, 38, 279, 124, 66); }
   if (name === 'shelves') { setBathDoors(true); walk.pos.set(304, 0, 89); walk.eye = walk.targetEye = 165; lookAtYP(304, 165, 89, 110, 148, 89); }
   if (name === 'galley') { setBathDoors(true); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 160; lookAtYP(300, 160, 92, 110, 120, 120); }
+  if (name === 'ext34') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(70, 60, 89); orbit.theta = -0.92; orbit.phi = 1.44; orbit.r = 780; return; }
+  if (name === 'rear') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(160, 70, 89); orbit.theta = 2.25; orbit.phi = 1.42; orbit.r = 800; return; }
   if (name === 'sideroof') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(70, 215, 89); orbit.theta = Math.PI; orbit.phi = 1.57; orbit.r = 330; return; }
   if (name === 'side') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(170, 150, 89); orbit.theta = Math.PI; orbit.phi = 1.56; orbit.r = 820; return; }
   if (name === 'roof') { setMode('dollhouse'); roofOn = true; applyVisibility(); orbit.target.set(120, 200, 89); orbit.theta = -2.6; orbit.phi = 0.55; orbit.r = 640; return; }
