@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>v41 · Martin's van v40 · 3D walk-through (fixed flare bed + rear garage)</title>
+<title>v42 · Martin's van v40 · 3D walk-through (fixed flare bed + rear garage)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -1041,7 +1041,7 @@ const SKX1 = 200, SKX2 = 240, SKZ1 = ZC - 20, SKZ2 = ZC + 20;
   sky.rotation.x = Math.PI / 2; sky.position.set((SKX1 + SKX2) / 2, yc - 0.4, ZC); groups.upper.add(sky);
   for (const [a, b, c, d] of [[SKX1 - 4, SKX2 + 4, SKZ1 - 4, SKZ1], [SKX1 - 4, SKX2 + 4, SKZ2, SKZ2 + 4], [SKX1 - 4, SKX1, SKZ1, SKZ2], [SKX2, SKX2 + 4, SKZ1, SKZ2]]) box(a, b, yc - 2.2, yc - 0.2, c, d, mat.white, groups.upper);
   const rl = new T.PointLight(0xe8f4ff, 0.6, 220, 0); rl.position.set(220, 175, ZC); groups.lights.add(rl); }
-// outside: RTX 2000 on the crown, fan on a Transit contour adapter, solar on a rack on the roof mounting points
+// outside: RTX 2000 on the crown, fan on a Transit contour adapter, low-mount solar on Z-brackets/VHB
 const R = groups.roof;
 rbox(ACX, ACX + 64.5, 208.6, 234, 46, 132, 6, M({ color: 0xe9ecef }), R);
 box(193, 247, roofY(62) - 3, 211, 62, 116, M({ color: 0xe9ecef }), R);                                              // skylight adapter + frame
@@ -1056,24 +1056,15 @@ const LID_DEG = 4.8;                                                            
 { const lid = new T.Mesh(new T.BoxGeometry(58.5, 2, 41.7), M({ color: 0x3a3f45 }));
   const a = LID_DEG * Math.PI / 180; lid.rotation.z = a;
   lid.position.set(FO1 + 29.25 * Math.cos(a), roofY(FZC) + 14.7 + 29.25 * Math.sin(a), FZC); R.add(lid); }
-for (const z of [ZC - 70, ZC + 70]) {
-  for (const [a, b] of [[76, 194], [247, 364]]) box(a, b, 211, 214, z - 2, z + 2, mat.alu, R);              // v33 rack rails: front of the skylight / behind the AC
-  for (const x of [80, 135, 190, 251, 306, 360]) box(x - 2, x + 2, roofY(z) - 8, 211, z - 2, z + 2, mat.alu, R);
-}
-// v29: RAISED rack over the fan: 3rd Canadian Solar CS6.1-54TM-450H (1800 x 1134 x 35) crosswise, x -36 .. 77.4,
-// panel underside 22 cm above the roof crown, in series with the two 450s on the existing SmartSolar 150/45
-const RB = roofY(ZC) + 22;          // panel underside
-for (const x of [-31, 72]) {
-  box(x - 2.5, x + 2.5, RB - 4, RB, 1, 177, mat.alu, R);                                                     // crosswise bars
-  for (const z of (x < 0 ? [ZC - 70, ZC - 35, ZC + 35, ZC + 70] : [ZC - 70, ZC - 35, ZC + 70]))
-    box(x - 2, x + 2, roofY(z) - 8, RB - 4, z - 2, z + 2, mat.alu, R);                                     // tall legs
-}
-box(-38, -36, RB - 6, RB + 1, 1, 177, M({ color: 0x343a40 }), R);                                            // wind fairing lip
-box(-36, 77.4, RB, RB + 3.5, -1, 179, mat.alu, R);
-{ const sp = new T.Mesh(new T.PlaneGeometry(111.4, 178), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set(-36 + 56.7, RB + 3.6, 89); R.add(sp); }
-for (const x of [78, 249]) {   // v33: 450 W #1 between the raised panel and the skylight, #2 behind the AC
-  box(x, x + 113.4, 214, 217, -1, 179, mat.alu, R);
-  const sp = new T.Mesh(new T.PlaneGeometry(111.4, 178), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set(x + 56.7, 217.1, 89); R.add(sp);
+// v42: LOW-MOUNT solar on the real roof skin (no rack): 2x Renogy 200 W (1262x764) crosswise + 1x Renogy 100 W (865x578),
+// flat, panel underside 4 cm above the roof crown, 4 alu Z-bracket feet per panel on VHB (old raised rack + 3x450 W removed - did not fit)
+const PV_UNDER = roofY(ZC) + 4;
+for (const [x0, x1, z0, z1] of [[103.3, 179.7, 25.0, 151.2], [257.0, 333.4, 25.0, 151.2], [-10.0, 76.5, 25.0, 82.8]]) {
+  const lx = (x1 - x0) >= (z1 - z0);
+  const feet = lx ? [[x0 + 12, z0 + 6], [x0 + 12, z1 - 6], [x1 - 12, z0 + 6], [x1 - 12, z1 - 6]] : [[x0 + 6, z0 + 12], [x0 + 6, z1 - 12], [x1 - 6, z0 + 12], [x1 - 6, z1 - 12]];
+  for (const [x, z] of feet) box(x - 2, x + 2, roofY(z) - 1, PV_UNDER, z - 2, z + 2, mat.alu, R);
+  box(x0, x1, PV_UNDER, PV_UNDER + 3, z0, z1, mat.alu, R);
+  const sp = new T.Mesh(new T.PlaneGeometry(x1 - x0 - 1.6, z1 - z0 - 1.6), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set((x0 + x1) / 2, PV_UNDER + 3.1, (z0 + z1) / 2); R.add(sp);
 }
 
 // ------------------------------------------------------------------ v31 REAL BODY
@@ -1220,7 +1211,7 @@ const labelDefs = [
   ['Skylight: Dometic Mini Heki Style 40×40 (mid-van)', [220, 192, 89], () => !(mode !== 'walk' && !roofOn)],
   ['MaxxAir over the toilet', [59, 200, 119], () => !(mode !== 'walk' && !roofOn)],
   ['Dometic RTX 2000 AC over the bed · grille 86.9 cm above the mattress', [397, 188, 89], () => !(mode !== 'walk' && !roofOn)],
-  ['Solar 3 × 450 W (2 on the rack, 1 raised over the fan)', [370, 228, 89], () => mode !== 'walk' && roofOn],
+  ['Solar 2 × 200 W + 1 × 100 W = 500 W, low Z-bracket mounts (v42)', [370, 228, 89], () => mode !== 'walk' && roofOn],
   ['Rear wheel well', [252, 30, 10], () => mode !== 'walk'],
   ['Driver seat (fixed)', [-34, 150, 147]],
   ['Passenger seat (swivel)', [-34, 150, 31]],
