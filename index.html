@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>v44 · Martin's van v40 · 3D walk-through (wardrobe, lower bed, garage, Starlink)</title>
+<title>v45 · Martin's van v40 · 3D walk-through (wardrobe, lower bed, garage, Starlink)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -30,12 +30,12 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v44 · 3D</span>
+    <span id="title">Van v45 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
   <div class="row extra">
-    <button data-preset="exterior">Exterior (true Transit)</button><button data-preset="interior">Bed edge → front</button><button data-preset="toilet">Toilet · fan · rain head</button><button data-preset="door">From the sliding door</button><button data-preset="front">Aisle → front</button><button data-preset="wardrobe">Wardrobe (v44)</button><button data-preset="garage">Garage (from the aisle)</button><button data-preset="garagerear">Garage x-ray</button><button data-preset="storage">Garage: storage side</button><button data-preset="bedview">Flare bed</button><button data-preset="bedsit">Sitting on the bed</button><button data-preset="cutaway">Section: bed headroom</button><button data-preset="kitchen">Compact kitchen</button><button data-preset="cookout">Cooktop out</button><button data-preset="bathfloor">Bath floor (teak slats)</button><button data-preset="fridge">Fridge + microwave</button><button data-preset="couch1">Single couch</button><button data-preset="aisle">Chair tucked · aisle</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Aisle → rear</button><button data-preset="chair">Gaming chair</button>
+    <button data-preset="exterior">Exterior (true Transit)</button><button data-preset="interior">Bed edge → front</button><button data-preset="toilet">Toilet · fan · rain head</button><button data-preset="door">From the sliding door</button><button data-preset="front">Aisle → front</button><button data-preset="wardrobe">Wardrobe (v44)</button><button data-preset="garage">Garage (from the aisle)</button><button data-preset="garagerear">Garage x-ray</button><button data-preset="tanks">Tanks (v45)</button><button data-preset="storage">Garage: storage side</button><button data-preset="bedview">Flare bed</button><button data-preset="bedsit">Sitting on the bed</button><button data-preset="cutaway">Section: bed headroom</button><button data-preset="kitchen">Compact kitchen</button><button data-preset="cookout">Cooktop out</button><button data-preset="bathfloor">Bath floor (teak slats)</button><button data-preset="fridge">Fridge + microwave</button><button data-preset="couch1">Single couch</button><button data-preset="aisle">Chair tucked · aisle</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Aisle → rear</button><button data-preset="chair">Gaming chair</button>
     <button data-preset="bed">Lying in bed → monitor</button><button data-preset="dollhouse">Dollhouse</button>
   </div>
   <div class="row extra">
@@ -1083,6 +1083,15 @@ const LID_DEG = 4.8;                                                            
 // v44 Starlink Mini (29.85 x 25.9 x 3.85) flat on 2 cm feet, between solar 1 and 2, clear of the Heki; tank vent cap over the bath corner
 { const sy = Math.max(roofY(25.5), roofY(51.4)) + 2; box(205.1, 235, sy - 2.5, sy, 30, 47, mat.alu, R); rbox(205.1, 235, sy, sy + 3.85, 25.5, 51.4, 1, M({ color: 0xf1f3f5 }), R);
   const cy = roofY(154); cyl(17, cy, cy + 7, 154, 7, M({ color: 0xe9ecef }), R); }
+
+// v45 TANKS (cm; x = X/10, y = Z/10, z = Y/10). Underfloor: black Ronco 34H 37.9 L + grey Ronco 7H 60.6 L outboard of the driver rail, foam boxes, shared 3" dump
+box(2, 97.4, -26.9, -9.5, 143, 180, mat.pink);  box(4, 95.4, -24.7, -9.5, 145, 178, mat.black);          // black tank in XPS box
+box(98.5, 192.9, -31.6, -4, 139.5, 185.7, mat.pink); box(100, 191.4, -29.4, -4, 141, 184.2, mat.grey);    // grey tank in XPS box
+box(87.5, 94.5, -32, -26.9, 157.5, 165.5, mat.red); box(100.5, 106.5, -35, -31.6, 159, 164, mat.red);     // 3" black valve, 1.5" grey valve
+box(87, 107, -36, -32, 157.5, 165.5, mat.steel); box(88, 96, -36, -28, 165.5, 189.5, mat.steel);           // wye + 3" dump outlet to the driver rocker
+box(12.2, 106, -9, -4.2, 165, 169.8, mat.white); box(54.3, 63.7, -9.5, 0, 151.8, 161.2, mat.white); box(168.6, 173.4, -4, 0, 160, 164.8, mat.white); // grey vent, toilet + sink drops
+// insulated fresh tank W-499 91 L, under-bed passenger front, + Shurflo 4008 pump on the lid
+box(315.2, 379.5, 0, 34.5, 4.5, 58, mat.pink); box(317.2, 377.5, 2, 32.5, 6.5, 56, mat.white); box(319, 342.8, 34.5, 45.5, 30, 43, mat.blue);
 wallFit(163, 175, 0, 196, 11, 20, mat.bathWall);   // v44 hidden tank-vent chase (1.5in ABS, black + grey teed)
 // v42: LOW-MOUNT solar on the real roof skin (no rack): 2x Renogy 200 W (1262x764) crosswise + 1x Renogy 100 W (865x578),
 // flat, panel underside 4 cm above the roof crown, 4 alu Z-bracket feet per panel on VHB (old raised rack + 3x450 W removed - did not fit)
@@ -1361,6 +1370,7 @@ function preset(name) {
   if (name === 'cookout') { setMode('walk'); setXray(false); setCook(true, true); setBathDoors(true); walk.pos.set(140, 0, 70); walk.eye = walk.targetEye = 160; lookAtYP(140, 160, 70, 135, 85, 115); return; }
   if (name === 'kitchen') { setMode('walk'); setXray(false); setCook(true, true); setBathDoors(true); walk.pos.set(176, 0, 100); walk.eye = walk.targetEye = 170; lookAtYP(176, 170, 100, 150, 85, 150); return; }
   if (name === 'garage') { setMode('walk'); setXray(false); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 62; lookAtYP(300, 62, 92, 430, 35, 95); return; }
+  if (name === 'tanks') { section = false; roofOn = false; setMode('dollhouse'); setXray(true); applyVisibility(); orbit.target.set(200, -10, 120); orbit.theta = -1.1; orbit.phi = 1.95; orbit.r = 420; return; }
   if (name === 'garagerear') { section = false; roofOn = false; setMode('dollhouse'); setXray(true); applyVisibility(); orbit.target.set(372, 50, 89); orbit.theta = 1.57; orbit.phi = 1.35; orbit.r = 330; return; }
   if (name === 'storage') { setMode('walk'); setXray(false); walk.pos.set(300, 0, 70); walk.eye = walk.targetEye = 70; lookAtYP(300, 70, 70, 385, 45, 150); return; }
   if (name === 'aisle') { setMode('walk'); setXray(false); setBathDoors(true); walk.pos.set(120, 0, 100); walk.eye = walk.targetEye = 165; lookAtYP(120, 165, 100, 260, 50, 105); return; }
