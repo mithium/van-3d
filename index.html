@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>v42 · Martin's van v40 · 3D walk-through (fixed flare bed + rear garage)</title>
+<title>v43 · Martin's van v40 · 3D walk-through (fixed flare bed + rear garage)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -30,7 +30,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v40 · 3D</span>
+    <span id="title">Van v43 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -584,7 +584,7 @@ const arch = xc => { const o = []; for (let k = 0; k < 9; k++) { const a = xc - 
 //      middle stamping x 152..249.2 (can't slide forward: the C-pillar/stamping fixes it) -> over the rear 96 cm of the 138 cm counter.
 //      Glass runs y 59.5..131.7 outside; inside, the part below the counter top (92) is blanked by the cabinet back (black panel).
 // v25: passenger desk window (FW286R) REMOVED -> solid passenger wall; the slider glass is the only passenger-side glass
-const FLX1 = 268, FLX2 = 432, FLY1 = 58, FLY2 = 130;   // v37 Flarespace Transit 148" EL flare opening (64.5" x 28.25" = 164 x 72)
+const FLX1 = 268, FLX2 = 432, FLY1 = 58, FLY2 = 130;   // Flarespace Transit 148" EL flare outline (64.5" x 28.25" = 164 x 72); v43 shape: see FL below
 const WIN = { P: [], D: [] };   // v33: CRL FW297R (passenger) + FW297L (driver) rear quarters, one each side of the bed
 const WIN_IN = { P: [[FLX1, FLX2, FLY1, FLY2]], D: [[FLX1, FLX2, FLY1, FLY2]] };   // v32: glass shows above the sofa back (80) / above the kitchen counter (92)
 const SDG = [4.25, 141.75, 59, 132.3];   // slider glass (Ford fixed/vented slider glass = FW293R size 137.5 x 73.3) on the CLOSED door
@@ -620,19 +620,38 @@ for (const s of [-1, 1]) {
   const za = s < 0 ? ZC - 78.35 + 1.5 : ZC + 1.5, zb = s < 0 ? ZC - 1.5 : ZC + 78.35 - 1.5;
   box(L - 0.6, L - 0.3, Math.max(RDG[0] + 4, 112), RDG[1] - 4, za + 4, zb - 4, mat.tint);
 }
-// ---- v37 FLARESPACE FLARES (both sides, rear quarter): fiberglass bump-outs 3.25" (8.3 cm) proud of the skin, 164 x 72 cm,
-// wall-to-wall inside up to 80" (203 cm). Each carries a Flarespace / CRL 10" x 33" slider (84 x 25 cm) high in the flare.
-// (The model draws the flare recess just inside the stock skin; the real recess is ~4 cm deeper.)
+// ---- v43 FLARESPACE 148" EL FLARES: real moulded, tapered shape (same parameters as the CAD model, cm).
+// Published: outline 163.8 x 71.8 (64.5" x 28.25"), 5.08 (2") proud of the skin, 8.26 (3.25") total depth (flarespace.com).
+// Estimated: corner radii (rear 9, front 23 top / 12 bottom), 4 cm taper (lower at the front), 5.5 edge roll, 26 front fairing.
+const FL = { x0: 268, x1: 432, z0: 58, z1: 129.8, out: 5.08, rr: 9, rft: 23, rfb: 12, tap: 4, roll: 5.5, fair: 26 };
+const flTop = x => FL.z1 - FL.tap * (1 - (x - FL.x0) / (FL.x1 - FL.x0));
+function flIn(x, y) {
+  const yt = flTop(x); let d = Math.min(x - FL.x0, FL.x1 - x, y - FL.z0, yt - y);
+  for (const [cx, cy, r, sx, sy] of [[FL.x0, yt, FL.rft, 1, -1], [FL.x0, FL.z0, FL.rfb, 1, 1], [FL.x1, yt, FL.rr, -1, -1], [FL.x1, FL.z0, FL.rr, -1, 1]]) {
+    const ox = cx + sx * r, oy = cy + sy * r; if ((x - ox) * sx < 0 && (y - oy) * sy < 0) d = Math.min(d, r - Math.hypot(x - ox, y - oy)); }
+  return d;
+}
+const sst = t => { t = Math.min(Math.max(t, 0), 1); return t * t * t * (t * (6 * t - 15) + 10); };
+const flH = (x, y) => { const d = flIn(x, y); return d <= 0 ? 0 : FL.out * sst(d / FL.roll) * sst((x - FL.x0) / FL.fair + 0.08); };
+function flSurf(side, base, sh, m) {   // grid surface trimmed to the rounded outline, z = skin + h
+  const NX = 82, NY = 36, pos = [], uv = [];
+  const P = (x, y) => { const h = Math.max(flH(x, y) - sh, 0); return [x, y, side < 0 ? ZC - base - h : ZC + base + h]; };
+  for (let i = 0; i < NX; i++) for (let j = 0; j < NY; j++) {
+    const xa = FL.x0 + (FL.x1 - FL.x0) * i / NX, xb = FL.x0 + (FL.x1 - FL.x0) * (i + 1) / NX, ya = FL.z0 + (FL.z1 - FL.z0) * j / NY, yb = FL.z0 + (FL.z1 - FL.z0) * (j + 1) / NY;
+    if (Math.min(flIn(xa, ya), flIn(xb, ya), flIn(xb, yb), flIn(xa, yb)) < -0.1) continue;
+    const q = side < 0 ? [[xa, ya], [xb, ya], [xb, yb], [xa, ya], [xb, yb], [xa, yb]] : [[xa, ya], [xb, yb], [xb, ya], [xa, ya], [xa, yb], [xb, yb]];
+    for (const [x, y] of q) { pos.push(...P(x, y)); uv.push(x, y); }
+  }
+  const g = new T.BufferGeometry(); g.setAttribute('position', new T.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new T.Float32BufferAttribute(uv, 2)); g.computeVertexNormals();
+  const mesh = new T.Mesh(g, m); root.add(mesh); return mesh;
+}
 for (const side of [-1, 1]) {
   const zo = (h) => side < 0 ? ZC - h : ZC + h;
-  const zA = zo(99.2), zB = zo(107.6);
-  rbox(FLX1 - 3, FLX2 + 3, FLY1 - 4, FLY2 + 4, Math.min(zA, zB), Math.max(zA, zB), 5, mat.paint);                        // outer shell
-  box(306, 394, 99, 128, side < 0 ? zo(107.8) : zo(107.4), side < 0 ? zo(107.4) : zo(107.8), mat.tint);            // 10x33 window
-  box(304, 396, 97, 130, side < 0 ? zo(107.7) - 0.01 : zo(107.5), side < 0 ? zo(107.5) : zo(107.7) + 0.01, mat.black);
-  const zl = zo(94.5), zl2 = zo(95);
-  box(FLX1, FLX2, FLY1, FLY2, Math.min(zl, zl2), Math.max(zl, zl2), mat.felt);                                          // flare inner wall
-  box(308, 392, 101, 126, side < 0 ? zl + 0.1 : zl - 0.2, side < 0 ? zl + 0.2 : zl - 0.1, mat.tint);              // window (inside)
-  for (const y of [FLY1, FLY2 - 1]) box(FLX1, FLX2, y, y + 1, Math.min(zo(86), zl), Math.max(zo(86), zl), mat.felt);
+  const fo = flSurf(side, 99.2, 0, mat.paint); fo.material = mat.paint.clone(); fo.material.side = T.DoubleSide;   // outer moulded shell
+  box(307, 393, 95, 122.6, side < 0 ? zo(104.6) : zo(104.2), side < 0 ? zo(104.2) : zo(104.6), mat.tint);        // 33-7/8 x 10-7/8 half-slider frame (published)
+  box(305, 395, 93.5, 124, side < 0 ? zo(104.5) - 0.01 : zo(104.3), side < 0 ? zo(104.3) : zo(104.5) + 0.01, mat.black);
+  const fi = flSurf(side, 98.7, 0.5, mat.felt); fi.material = mat.felt.clone(); fi.material.side = T.DoubleSide;     // inner face of the shell (lined)
+  box(308, 392, 96, 121.6, side < 0 ? zo(103.6) : zo(103.4), side < 0 ? zo(103.4) : zo(103.6), mat.tint);        // window (inside)
 }
 // ---- interior trim (felt walls follow the real wall; ceiling follows the real roof)
 for (const side of [-1, 1]) {
