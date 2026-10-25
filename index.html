@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>v43 · Martin's van v40 · 3D walk-through (fixed flare bed + rear garage)</title>
+<title>v44 · Martin's van v40 · 3D walk-through (wardrobe, lower bed, garage, Starlink)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -30,12 +30,12 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v43 · 3D</span>
+    <span id="title">Van v44 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
   <div class="row extra">
-    <button data-preset="exterior">Exterior (true Transit)</button><button data-preset="interior">Bed edge → front</button><button data-preset="toilet">Toilet · fan · rain head</button><button data-preset="door">From the sliding door</button><button data-preset="front">Aisle → front</button><button data-preset="garage">Garage (from the aisle)</button><button data-preset="garagerear">Garage x-ray</button><button data-preset="storage">Garage: storage side</button><button data-preset="bedview">Flare bed</button><button data-preset="bedsit">Sitting on the bed</button><button data-preset="cutaway">Section: bed headroom</button><button data-preset="kitchen">Compact kitchen</button><button data-preset="cookout">Cooktop out</button><button data-preset="bathfloor">Bath floor (teak slats)</button><button data-preset="fridge">Fridge + microwave</button><button data-preset="couch1">Single couch</button><button data-preset="aisle">Chair tucked · aisle</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Aisle → rear</button><button data-preset="chair">Gaming chair</button>
+    <button data-preset="exterior">Exterior (true Transit)</button><button data-preset="interior">Bed edge → front</button><button data-preset="toilet">Toilet · fan · rain head</button><button data-preset="door">From the sliding door</button><button data-preset="front">Aisle → front</button><button data-preset="wardrobe">Wardrobe (v44)</button><button data-preset="garage">Garage (from the aisle)</button><button data-preset="garagerear">Garage x-ray</button><button data-preset="storage">Garage: storage side</button><button data-preset="bedview">Flare bed</button><button data-preset="bedsit">Sitting on the bed</button><button data-preset="cutaway">Section: bed headroom</button><button data-preset="kitchen">Compact kitchen</button><button data-preset="cookout">Cooktop out</button><button data-preset="bathfloor">Bath floor (teak slats)</button><button data-preset="fridge">Fridge + microwave</button><button data-preset="couch1">Single couch</button><button data-preset="aisle">Chair tucked · aisle</button><button data-preset="entry">Entry → angled bath</button><button data-preset="hall">Hallway → front</button><button data-preset="bath">Through the bath → cab</button><button data-preset="galley">Aisle → rear</button><button data-preset="chair">Gaming chair</button>
     <button data-preset="bed">Lying in bed → monitor</button><button data-preset="dollhouse">Dollhouse</button>
   </div>
   <div class="row extra">
@@ -903,13 +903,13 @@ function shelfRun(x1, x2, side, y0, items) {             // side -1 = passenger,
 box(SD1, SD2, DOORH, DOORH + 8, zWallP(DOORH + 4) - 0.5, zWallP(DOORH + 4) + 2, mat.dark);
 // passenger: fridge tower -> door span (stepped up) -> desk span (lowered) -> bed span (v22 height)
 shelfRun(60, 140, -1, SH_DOOR, [[78, 96, 7, 0xc9b79c], [112, 126, 9, 0x8c949c]]);
-shelfRun(140, 310, -1, SH_MAIN, [[150, 166, 14, 0xd9a066], [262, 284, 15, 0xe6dccb]]);   // v33: ends at the bed zone
+shelfRun(184, 310, -1, SH_MAIN, [[190, 206, 14, 0xd9a066], [262, 284, 15, 0xe6dccb]]);   // v44: starts at the wardrobe   // v33: ends at the bed zone
 // v32: no passenger shelf over the lift bed (it rises through that zone)
 // driver: bath rear wall -> galley + couch span (lowered) -> bed span (v22 height)
 shelfRun(BX2 + 2, 310, 1, SH_MAIN, [[120, 136, 14, 0xb0643a], [196, 214, 15, 0xe6dccb], [270, 284, 13, 0x8c949c]]);   // v33: over the sofa only (wardrobe in front)
 // v32: no driver shelf over the lift bed
 // books on the desk-span shelf
-for (let i = 0; i < 8; i++) box(170 + i * 3, 172.6 + i * 3, SH_MAIN + SHT, SH_MAIN + SHT + 13 + (i % 3) * 1, zWallP(SH_MAIN + SHT) + 6, zWallP(SH_MAIN + SHT) + 15, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
+for (let i = 0; i < 8; i++) box(212 + i * 3, 214.6 + i * 3, SH_MAIN + SHT, SH_MAIN + SHT + 13 + (i % 3) * 1, zWallP(SH_MAIN + SHT) + 6, zWallP(SH_MAIN + SHT) + 15, M({ color: [0x7b2cbf, 0x1864ab, 0xc0392b, 0x2b8a3e][i % 4] }), groups.shelves);
 
 // ------------------------------------------------------------------ CAB-OVER SHELF  x -58..-18, z 25.5..152.5 (127 x 40), above the seats (v22: 4 cm shallower for the real roof cap)
 const shelfN0 = groups.shelves.children.length;
@@ -926,12 +926,17 @@ box(-56, -20, 173.2, 174, 30, 148, mat.led, groups.shelves);
 
 // ------------------------------------------------------------------ DESK RUN  x 140..310, z 3..58
 const DX1 = 140, DX2 = 310, DZ2 = 58, DY = 74, PBX1 = 286;
-rbox(DX1, PBX1, DY, DY + 3.5, 2.5, DZ2, 1, mat.walnut);    // desk top (extension + main)
-box(DX1 + 1, 191, 0, DY, 4, DZ2 - 1, mat.birch);           // extension drawer unit
-for (const y of [24, 49]) box(DX1 + 1, 191, y - 0.4, y + 0.4, DZ2 - 1, DZ2 - 0.4, mat.dark);
-for (const y of [16, 40, 64]) box(158, 174, y, y + 1.4, DZ2 - 0.4, DZ2 + 1, mat.black);
-box(191, 192.5, 0, DY, 4, DZ2 - 1, mat.birch);             // panel between drawers and knee space
-box(192, PBX1, 4, DY, 3, 5, mat.birch);                    // modesty / back panel
+rbox(183.5, PBX1, DY, DY + 3.5, 2.5, DZ2, 1, mat.walnut);    // v44 desk top butts the wardrobe
+// v44 FULL-HEIGHT WARDROBE x 142.5..183.5 (41 wide), depth to z 58, floor -> finished ceiling (scribed to wall + roof)
+wallFit(0, 57, 0, CEIL, 142.5, 183.5, mat.birch);
+box(142.7, 183.3, 2, 90, 57, 58.2, mat.birch);                                       // 4 drawer fronts
+for (const y of [25, 47, 69]) box(142.7, 183.3, y - 0.2, y + 0.2, 58.2, 58.4, mat.dark);
+for (const y of [14, 37, 59, 80]) box(157, 169, y, y + 1.2, 58.2, 59.2, mat.black);
+box(142.7, 183.3, 90.2, 190, 57, 58.2, mat.birch);                                   // hanging door (rod inside at 183.5, ~90 clear drop)
+box(142.7, 183.3, 90, 90.4, 58.2, 58.4, mat.dark);
+box(178, 179.2, 130, 150, 58.2, 59.2, mat.black);
+box(142.7, 183.3, 190.2, Math.min(CEIL, ceilY(57)) - 0.3, 57, 58.2, mat.birch);                // top filler, scribed
+box(184, PBX1, 4, DY, 3, 5, mat.birch);                    // modesty / back panel
 // PC bay (tall + narrow at the bed end)
 box(PBX1, DX2, 0, DY + 3.5, 4, 57, mat.charcoal);
 box(287, 293, 8, 24, 57, 57.4, mat.blue);                 // filtered intake
@@ -988,7 +993,7 @@ for (const sx of [-28, 28]) { rod([sx, 54, 10], [sx, 66, 10], 1.6, mat.dark, cha
 // Garage clear height 92 (floor -> underside of the deck), 3 cm ply deck on aluminium angle frame -> deck top 95, 15 cm mattress -> top 110.
 // Sitting headroom: thin bed-zone ceiling 202.5 at the centreline -> 92.5 cm over the mattress. The mattress (190 x 122, one piece, full)
 // spans z -6..184 into both Flarespace recesses (opening y 58..130), so 20 cm over the mattress at the flare ends (feet / head).
-const BEDX1 = 310, BEDX2 = 434, GAR_H = 92, DECK = 3, BMT = 15, MAT_Z1 = 89 - 95, MAT_Z2 = 89 + 95, BED_TOP = GAR_H + DECK + BMT;
+const BEDX1 = 310, BEDX2 = 434, GAR_H = 77, DECK = 3, BMT = 15, MAT_Z1 = 89 - 95, MAT_Z2 = 89 + 95, BED_TOP = GAR_H + DECK + BMT;
 const bedT = 1; function setBed() {}
 mat.cabX = M({ map: woodTex('#dcc5a0', '#9c7d55', 80), transparent: true });
 mat.bedAlu = M({ color: 0x9aa1a8, transparent: true });
@@ -1007,44 +1012,44 @@ rbox(BEDX1 + 3, BEDX2 - 30, BED_TOP - 1, BED_TOP + 1.5, MAT_Z1 + 3, MAT_Z2 - 3, 
 for (const [a, b] of [[BEDX2 - 28, BEDX2 - 4]]) for (const [z1, z2] of [[20, 80], [98, 158]]) rbox(a, b, BED_TOP, BED_TOP + 12, z1, z2, 5, mat.pillow);
 // ---- GARAGE under the bed (92 clear): passenger = litter (front, flap to the aisle) + open gear bay + 12 V systems (rear),
 // centre z 58..128 = open garage (tools / gear) reachable from the rear doors and from the aisle, driver = storage cabinet + heater/pump bay
-box(318, 356, 0, 22, 6, 46, mat.mint, X); box(320, 354, 0, 14, 8, 44, mat.grey, X);
-cyl(350, 22, 30, 10, 2.5, mat.dark, X);                                                // 12 V extract fan -> floor vent
-box(356.5, 357, 0, 60, 4, 50, M({ color: 0x0b7d5b }));                                  // litter enclosure
-box(318, 357, 60, 60.5, 4, 50, M({ color: 0x0b7d5b }));
-const flap = rbox(337, 345, 1, 18, 49.6, 50.4, 0.3, M({ color: 0x3b3f44 }));             // cat flap faces the aisle
-box(318, 356, 62, 88, 6, 48, mat.grey, X);                                              // bin over the litter
-box(362, 392, 0, 30, 8, 48, mat.red, X); box(362, 392, 32, 62, 8, 48, M({ color: 0x5c7cfa }), X);   // open gear bay: bins
-box(396, 428, 0, 22, 4, 24, mat.orange, X); box(398, 426, 0, 30, 28, 38, mat.blue, X);      // 12 V: LiFePO4, inverter
-box(398, 410, 0, 24, 40, 48, M({ color: 0xbfdcf2 }), X); box(414, 426, 0, 24, 40, 48, mat.yellow, X);
-box(398, 426, 40, 70, 4, 6, mat.dark);                                                  // MPPT / fuse board on the wall
-box(394.5, 395, 0, 88, 4, 50, mat.cabX);                                                // systems bay panel
+// v44: litter box at the FRONT centre (door to the aisle at x 311), 12 V fan + 50 mm duct to a passenger wall vent
+box(311, 353, 0, 48, 64, 122, M({ color: 0x0b7d5b }));
+box(310.4, 311, 1, 47, 65, 121, mat.oak); const flap = rbox(310.2, 310.4, 2, 22, 84, 102, 0.3, M({ color: 0x3b3f44 }));
+cyl(346, 38, 46, 62, 4, mat.dark); box(343.7, 348.7, 39.8, 44.8, zWallP(42) + 0.5, 64, mat.grey);   // fan + duct -> vent
+box(361, 395, 0, 30, 8, 48, mat.red, X);                                                // gear bin
+// v44 battery bay (passenger rear, X 382..429, lockable vented cover at z 50)
+box(383, 400, 0, 21.5, 6, 39, mat.orange, X); box(401, 418, 0, 21.5, 6, 39, mat.orange, X);   // 2 x 100 Ah LiFePO4
+box(382.5, 418.5, 21.5, 23.5, 5.5, 39.5, mat.alu, X);                                  // hold-down frame
+box(400, 420, 42, 64, 5, 11, mat.blue);                                                 // DC-DC + fuses on the wall board
+box(380, 381.8, 0, 73, 4, 50, mat.cabX);                                                // battery bay divider
+box(381.8, 429, 0, 72, 50, 51.2, mat.cabX);                                             // lockable vented cover
+for (const y of [10, 60]) box(395, 415, y, y + 6, 51.2, 51.4, mat.dark);
 // centre garage floor: rubber mat, tie-down track, tool chest, bike-wheel / chairs
 box(312, 432, 0, 0.6, 60, 126, mat.dark);
 for (const z of [62, 124]) box(312, 432, 0.6, 1.4, z - 1, z + 1, mat.steel);
 box(400, 430, 0, 40, 66, 96, mat.red); box(401, 429, 40, 42, 67, 95, mat.black);         // rolling tool chest
-box(330, 380, 0, 25, 70, 110, mat.grey, X); box(340, 372, 25, 50, 75, 105, mat.orange, X);   // gear totes
+box(360, 395, 0, 25, 70, 110, mat.grey, X); box(362, 393, 25, 48, 75, 105, mat.orange, X);   // gear totes
 // driver-side STORAGE cabinet x 317..428, z 128..176, h 0..90
 box(317, 428, 0, 6, 131, 174, mat.dark);
-box(317, 428, 6, 90, 128, 176, mat.cabX);
-for (const [a, b, ys] of [[318, 354, [8, 30, 52, 72]], [356, 392, [8, 26, 44, 62, 78]]])
+box(317, 428, 6, 75, 128, 176, mat.cabX);
+for (const [a, b, ys] of [[318, 354, [8, 24, 40, 56, 73.5]], [356, 392, [8, 24, 40, 56, 73.5]]])
   for (let i = 0; i < ys.length - 1; i++) { box(a, b, ys[i], ys[i + 1] - 1, 127.6, 128, mat.oak); box((a + b) / 2 - 6, (a + b) / 2 + 6, ys[i + 1] - 6, ys[i + 1] - 4.8, 126.6, 127.6, mat.black); }
-box(318, 392, 79, 89, 127.6, 128, mat.oak);
-box(394, 427, 8, 89, 127.6, 128, mat.dark);                                             // service door: heaters / pump
+box(394, 427, 8, 73, 127.6, 128, mat.dark);                                             // v44 heater bay door (gasoline air heater)
 box(320, 352, 9, 28, 132, 172, mat.red, X); box(320, 352, 31, 50, 132, 172, mat.grey, X);
-box(358, 390, 9, 60, 132, 172, M({ color: 0x5c7cfa }), X);
-const calo = new T.Mesh(new T.CylinderGeometry(11, 11, 26, 20), mat.orange); calo.rotation.z = Math.PI / 2; calo.position.set(410, 20, 145); X.add(calo);
-box(398, 426, 50, 72, 140, 172, mat.dark, X); box(414, 426, 8, 18, 160, 172, mat.pink, X);
+box(358, 390, 9, 55, 132, 172, M({ color: 0x5c7cfa }), X);
+const calo = new T.Mesh(new T.CylinderGeometry(11, 11, 26, 20), mat.orange); calo.rotation.z = Math.PI / 2; calo.position.set(410, 20, 140); calo.scale.set(0.55, 1.2, 0.55); X.add(calo);
+box(398, 426, 45, 62, 140, 172, mat.dark, X); box(414, 426, 8, 18, 160, 172, mat.pink, X);
 // pegboard tool wall on the inside of the rear doors, lowered into the garage (y 8..88)
-box(434.5, 436, 8, 88, 52, 126, M({ color: 0xc9a77a }));
-for (let y = 12; y < 86; y += 6) for (let z = 56; z < 124; z += 6) box(434.3, 434.5, y, y + 0.6, z, z + 0.6, mat.dark);
-for (const [y, z, h] of [[70, 64, 18], [68, 76, 22], [74, 90, 14], [62, 104, 24], [70, 116, 16]]) box(432, 434.3, y - h, y, z - 1.5, z + 1.5, mat.red);
+box(434.5, 436, 8, 73, 52, 126, M({ color: 0xc9a77a }));
+for (let y = 12; y < 71; y += 6) for (let z = 56; z < 124; z += 6) box(434.3, 434.5, y, y + 0.6, z, z + 0.6, mat.dark);
+for (const [y, z, h] of [[60, 64, 18], [58, 76, 22], [64, 90, 14], [52, 104, 24], [60, 116, 16]]) box(432, 434.3, y - h, y, z - 1.5, z + 1.5, mat.red);
 let tableIsOut = false; function setTable() {}
 // fresh / grey / black tanks under the floor (only visible from outside / below)
 box(140, 188, -30, -3, 6, 54, M({ color: 0x1c7ed6, transparent: true, opacity: 0.6 }));
 box(140, 192, -28, -3, 138, 174, M({ color: 0x868e96 }));
 box(15, 59, -30, -3, 130, 172, M({ color: 0x212529 }));
 // CO detector by the bed
-const co = new T.Mesh(new T.CylinderGeometry(5, 5, 2, 16), M({ color: 0xf8f0f0 }, true)); co.rotation.x = Math.PI / 2; co.position.set(338, 150, zWallD(150) - 1); root.add(co);
+const co = new T.Mesh(new T.CylinderGeometry(5, 5, 2, 16), M({ color: 0xf8f0f0 }, true)); co.rotation.x = Math.PI / 2; co.position.set(316, 65, 146); co.rotation.set(0, Math.PI / 2, 0); root.add(co);
 
 // ------------------------------------------------------------------ ROOF: MaxxAir (v19: in the bath ceiling), RTX 2000 (over bed), 2 x 450 W solar
 // interior trims
@@ -1075,6 +1080,10 @@ const LID_DEG = 4.8;                                                            
 { const lid = new T.Mesh(new T.BoxGeometry(58.5, 2, 41.7), M({ color: 0x3a3f45 }));
   const a = LID_DEG * Math.PI / 180; lid.rotation.z = a;
   lid.position.set(FO1 + 29.25 * Math.cos(a), roofY(FZC) + 14.7 + 29.25 * Math.sin(a), FZC); R.add(lid); }
+// v44 Starlink Mini (29.85 x 25.9 x 3.85) flat on 2 cm feet, between solar 1 and 2, clear of the Heki; tank vent cap over the bath corner
+{ const sy = Math.max(roofY(25.5), roofY(51.4)) + 2; box(205.1, 235, sy - 2.5, sy, 30, 47, mat.alu, R); rbox(205.1, 235, sy, sy + 3.85, 25.5, 51.4, 1, M({ color: 0xf1f3f5 }), R);
+  const cy = roofY(154); cyl(17, cy, cy + 7, 154, 7, M({ color: 0xe9ecef }), R); }
+wallFit(163, 175, 0, 196, 11, 20, mat.bathWall);   // v44 hidden tank-vent chase (1.5in ABS, black + grey teed)
 // v42: LOW-MOUNT solar on the real roof skin (no rack): 2x Renogy 200 W (1262x764) crosswise + 1x Renogy 100 W (865x578),
 // flat, panel underside 4 cm above the roof crown, 4 alu Z-bracket feet per panel on VHB (old raised rack + 3x450 W removed - did not fit)
 const PV_UNDER = roofY(ZC) + 4;
@@ -1210,8 +1219,8 @@ const labelDefs = [
   ['2 food cupboards under the fridge', [62, 22, 34]],
   ['Microwave on the fridge: Danby DBMW0720 0.7 cu ft (44 × 33 × 26)', [62, 161, 40]],
   ['Flarespace flares both sides (+8.3 cm each, 203 cm wall-to-wall) · 10″×33″ slider window in each', [350, 132, W - 4]],
-  ['Rear garage under the bed · 92 cm clear, 124 × 172 (~1.9 m³) · open from the rear doors and the aisle', [372, 75, 92]],
-  ['Storage cabinet 111 × 48 × 90: tool drawers, clothes drawers, gear shelf (~290 L) + heater/pump service bay', [372, 60, 150]],
+  ['Rear garage under the bed · 77 cm clear (v44 bed lowered 15) · open from the rear doors and the aisle', [372, 75, 92]],
+  ['Storage cabinet 111 × 48 × 75: 2 × 4 drawers + gasoline air-heater bay (floor holes, CO alarm)', [372, 60, 150]],
   ['Factory slider glass (FW293R size 137.5 × 73.3) on the sliding door', [72, 145, -14], () => mode !== 'walk'],
   ['Rear-door glass (fixed, privacy)', [L + 6, 160, 89], () => mode !== 'walk'],
   ['Slim shelves 160', [215, 182, 150]],
@@ -1220,13 +1229,13 @@ const labelDefs = [
   ['Sliding door (130 × 160 cm)', [100, 140, 1]],
   ['Carpet: desk zone', [200, 4, 100], () => mode !== 'walk'],
   ['Vinyl plank: kitchen + dinette', [175, 4, 140], () => mode !== 'walk'],
-  ['Desk + drawers', [166, 92, 30]],
+  ['Wardrobe 41 × 54 × to ceiling: 4 drawers + hanging (~90 cm drop)', [163, 120, 40]],
   ['Main desk · monitor on arm', [235, 140, 20]],
   ['PC bay', [298, 70, 45]],
   ['Gaming chair', [216, 138, 95]],
   ['Fixed platform bed crossways into both flares · one full mattress 190 × 122 × 15 · top 110 · 92.5 cm sitting headroom', [372, 125, 89]],
-  ['Systems: 12 V LiFePO4, inverter/charger, MPPT, fuses (garage, passenger rear) · water heater, pump, gasoline heater (storage cabinet rear)', [414, 45, 89], () => xray],
-  ['Cat litter in the garage (sealed, 12 V fan → floor vent), flap faces the aisle', [337, 30, 40], () => xray],
+  ['Battery bay: 2 × 100 Ah LiFePO4, strapped, lockable vented cover (passenger rear) · gasoline heater (driver rear bay)', [405, 45, 60], () => xray],
+  ['Cat litter at the front of the under-bed space · door to the aisle · 12 V fan → passenger wall vent', [332, 30, 93], () => xray],
   ['Skylight: Dometic Mini Heki Style 40×40 (mid-van)', [220, 192, 89], () => !(mode !== 'walk' && !roofOn)],
   ['MaxxAir over the toilet', [59, 200, 119], () => !(mode !== 'walk' && !roofOn)],
   ['Dometic RTX 2000 AC over the bed · grille 86.9 cm above the mattress', [397, 188, 89], () => !(mode !== 'walk' && !roofOn)],
@@ -1351,11 +1360,12 @@ function preset(name) {
   if (name === 'cookstow') { setMode('walk'); setXray(false); setCook(false, true); setBathDoors(true); walk.pos.set(140, 0, 80); walk.eye = walk.targetEye = 160; lookAtYP(140, 160, 80, 135, 80, 125); return; }
   if (name === 'cookout') { setMode('walk'); setXray(false); setCook(true, true); setBathDoors(true); walk.pos.set(140, 0, 70); walk.eye = walk.targetEye = 160; lookAtYP(140, 160, 70, 135, 85, 115); return; }
   if (name === 'kitchen') { setMode('walk'); setXray(false); setCook(true, true); setBathDoors(true); walk.pos.set(176, 0, 100); walk.eye = walk.targetEye = 170; lookAtYP(176, 170, 100, 150, 85, 150); return; }
-  if (name === 'garage') { setMode('walk'); setXray(false); walk.pos.set(296, 0, 92); walk.eye = walk.targetEye = 60; lookAtYP(296, 60, 92, 430, 40, 95); return; }
+  if (name === 'garage') { setMode('walk'); setXray(false); walk.pos.set(300, 0, 92); walk.eye = walk.targetEye = 62; lookAtYP(300, 62, 92, 430, 35, 95); return; }
   if (name === 'garagerear') { section = false; roofOn = false; setMode('dollhouse'); setXray(true); applyVisibility(); orbit.target.set(372, 50, 89); orbit.theta = 1.57; orbit.phi = 1.35; orbit.r = 330; return; }
   if (name === 'storage') { setMode('walk'); setXray(false); walk.pos.set(300, 0, 70); walk.eye = walk.targetEye = 70; lookAtYP(300, 70, 70, 385, 45, 150); return; }
   if (name === 'aisle') { setMode('walk'); setXray(false); setBathDoors(true); walk.pos.set(120, 0, 100); walk.eye = walk.targetEye = 165; lookAtYP(120, 165, 100, 260, 50, 105); return; }
-  if (name === 'bedsit') { setMode('walk'); setXray(false); setMonitor('B'); walk.pos.set(380, 0, 89); walk.eye = walk.targetEye = 110 + 80; lookAtYP(380, 190, 89, 250, 140, 89); return; }
+  if (name === 'bedsit') { setMode('walk'); setXray(false); setMonitor('B'); walk.pos.set(380, 0, 89); walk.eye = walk.targetEye = 95 + 80; lookAtYP(380, 175, 89, 250, 125, 89); return; }
+  if (name === 'wardrobe') { setMode('walk'); setXray(false); setBathDoors(true); walk.pos.set(235, 0, 120); walk.eye = walk.targetEye = 160; lookAtYP(235, 160, 120, 163, 110, 30); return; }
   if (name === 'bedview') { setMode('walk'); setXray(false); walk.pos.set(262, 0, 95); walk.eye = walk.targetEye = 168; lookAtYP(262, 168, 95, 420, 112, 89); return; }
   if (name === 'bathfloor') { roofOn = false; setMode('dollhouse'); setXray(false); setBathDoors(true); orbit.target.set(60, 0, 118); orbit.theta = 1.9; orbit.phi = 0.42; orbit.r = 300; return; }
   if (name === 'fridge') { setMode('walk'); setXray(false); setBathDoors(false); walk.pos.set(200, 0, 66); walk.eye = walk.targetEye = 155; lookAtYP(200, 155, 66, 60, 128, 35); return; }
