@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>v45 · Martin's van v40 · 3D walk-through (wardrobe, lower bed, garage, Starlink)</title>
+<title>v46 · Martin's van v40 · 3D walk-through (wardrobe, lower bed, garage, Starlink)</title>
 <style>
   html,body{margin:0;height:100%;overflow:hidden;background:#c4d8ea;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
   #app canvas{display:block;touch-action:none}
@@ -30,7 +30,7 @@
 <div id="labels"></div>
 <div id="ui">
   <div class="row">
-    <span id="title">Van v45 · 3D</span>
+    <span id="title">Van v46 · 3D</span>
     <button data-mode="walk">Walk</button><button data-mode="dollhouse">Dollhouse</button><button data-mode="top">Top view</button>
     <button id="more">☰ More</button>
   </div>
@@ -1103,6 +1103,14 @@ for (const [x0, x1, z0, z1] of [[103.3, 179.7, 25.0, 151.2], [257.0, 333.4, 25.0
   box(x0, x1, PV_UNDER, PV_UNDER + 3, z0, z1, mat.alu, R);
   const sp = new T.Mesh(new T.PlaneGeometry(x1 - x0 - 1.6, z1 - z0 - 1.6), mat.solar); sp.rotation.x = -Math.PI / 2; sp.position.set((x0 + x1) / 2, PV_UNDER + 3.1, (z0 + z1) / 2); R.add(sp);
 }
+// v46 (cm): ZUHNE Modena 13 undermount sink 33x38x20 + Whale Elegance tap, LG 27GP850-B 27" monitor on wall arm, NR200P PC on bay shelf, G915 TKL + G502 X
+box(154.8, 187.8, 67.7, 88.15, 129.0, 167.1, mat.steel);   // sink bowl (rim shows in the counter cut-out)
+box(163.0, 179.5, 92, 110, 167.6, 173.0, mat.white); box(169, 174.5, 88, 110, 167.6, 173.0, mat.white); // faucet
+{ const g = new T.Mesh(new T.BoxGeometry(61.5, 36.5, 5.2), mat.black); g.position.set(263.7, 119.2, 22.6); g.rotation.y = -20 * Math.PI / 180; scene.add(g); } // monitor, 20 deg toward bed/couch
+box(238, 246, 115, 123, 3, 20, mat.grey);                  // wall arm
+box(287.8, 308.2, 29, 30.8, 11, 57, mat.grey); box(289, 307.5, 30.8, 60, 12, 49.6, mat.black); // PC shelf + Cooler Master NR200P
+box(218, 254.8, 77.5, 79.7, 33, 48, mat.black); box(260, 266.8, 77.5, 81.7, 36, 49.1, mat.black); // keyboard, mouse
+
 
 // ------------------------------------------------------------------ v31 REAL BODY
 // "Ford Transit L4H3" by geyges on Sketchfab (Sketchfab Standard licence). Offline-processed with gltf-transform: cab/cargo interior,
