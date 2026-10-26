@@ -235,7 +235,7 @@ function blocked(x, y, eyeZ) {
 }
 const FP = { on: false, x: 900, y: 300, yaw: 0, pitch: 0, eye: 1670, mv: [0, 0], keys: {} , gyro: false };
 const SPOTS = [
-  ['Sliding door', 1000, 850, 1670, 2600, 1000, -0.2], ['Kitchen', 1350, 700, 1670, 1750, 1700], ['Desk chair', 2250, 1150, 1450, 3100, 1150, -0.45],
+  ['Sliding door', 1000, 850, 1670, 2600, 1000, -0.2], ['Kitchen', 1350, 700, 1670, 1750, 1700], ['Desk chair', 2470, 1200, 1170, 3100, 1200, -0.3],
   ['Wardrobe', 2750, 1250, 1500, 1630, 300, -0.1], ['Sit up in bed', 3700, 900, 1700, 2500, 900, -0.25], ['Bathroom', 600, 1150, 1670, 600, 1800], ['Rear doors', 4900, 890, 1670, 2600, 890, -0.15], ['Garage (low)', 4300, 890, 600, 3000, 890, -0.35], ['Couch', 2150, 330, 1120, 3100, 1100, -0.12], ['Sink', 1712, 950, 1650, 1712, 1560, -0.75], ['Bed steps', 2330, 900, 1650, 2800, 420, -0.85]];
 const spotBox = document.querySelector('#fp .spots');
 function goSpot(s) { FP.x = s[1]; FP.y = s[2]; FP.eye = s[3]; FP.yaw = Math.atan2(s[5] - s[2], s[4] - s[1]); FP.pitch = s[6] !== undefined ? s[6] : -0.3; spotBox.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.textContent === s[0])); }
